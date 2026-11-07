@@ -1,3 +1,4 @@
+import './mute-auto.mjs'  // テスト中は絶対に音を出さない（playwright を無音に差し替え）
 import { MUTE_LAUNCH, muteContext } from './mute.mjs'
 // 遊び方ごとの分布。node sim.mjs [回数=12]
 // reader=ドリルの行き先と視線（鼻歌・助手）を読む（反応0.4秒）/ dest=行き先だけ見て挙げる / spam=ずっと挙げ続ける / random=適当 / none=何もしない

@@ -1,3 +1,4 @@
+import './mute-auto.mjs'  // テスト中は絶対に音を出さない（playwright を無音に差し替え）
 import { MUTE_LAUNCH, muteContext } from './mute.mjs'
 // SNS 用の画像 og.png（1200x630）。一番おもしろい場面＝銀歯が並んだ口の中カメラの前で、手を挙げてドリルを止めた瞬間（あ、ごめんごめん）を撮って右にタイトルを重ねる。node og.mjs
 import { chromium } from 'playwright'

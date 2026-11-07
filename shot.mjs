@@ -1,3 +1,4 @@
+import './mute-auto.mjs'  // テスト中は絶対に音を出さない（playwright を無音に差し替え）
 import { MUTE_LAUNCH, muteContext } from './mute.mjs'
 // 台本どおりに進めて撮る。node shot.mjs [幅 高さ]
 import { chromium } from 'playwright'
