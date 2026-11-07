@@ -19,13 +19,19 @@ const rows = await p.evaluate(({ bots, N }) => {
   return out
 }, { bots, N })
 const avg = (a, k) => a.reduce((s, x) => s + x[k], 0) / a.length
-console.log('bot      同意(平均/最小/最大)/件数  長さ秒(最小-最大)  称号')
+console.log('返事     同意/件  ひどさ(平均/最小-最大)  長さ秒        同意書の中身（c=そのまま cb=盛った cw=別の話 cn=押し切り）  称号')
 for (const bot of bots) {
-  const a = rows[bot], ns = a.map(x => x.n), titles = {}
-  for (const x of a) titles[x.title] = (titles[x.title] || 0) + 1
-  console.log(`${bot.padEnd(8)} ${avg(a, 'n').toFixed(1).padStart(4)} / ${Math.min(...ns)} / ${Math.max(...ns)} / ${avg(a, 'A').toFixed(1)}    ${Math.min(...a.map(x => x.len))}-${Math.max(...a.map(x => x.len))}   ${Object.entries(titles).map(([k, v]) => k + v).join(' ')}`)
+  const a = rows[bot], titles = {}, vs = {}
+  for (const x of a) { titles[x.title] = (titles[x.title] || 0) + 1; for (const it of x.items) { const v = it.startsWith('bonus:') ? 'おまけ' : it.split(':')[1]; vs[v] = (vs[v] || 0) + 1 } }
+  const sv = a.map(x => x.sev)
+  console.log(`${bot.padEnd(7)} ${avg(a, 'n').toFixed(1)}/${avg(a, 'A').toFixed(0)}   ${avg(a, 'sev').toFixed(0).padStart(3)} / ${Math.min(...sv)}-${Math.max(...sv)}       ${Math.min(...a.map(x => x.len))}-${Math.max(...a.map(x => x.len))}   ${JSON.stringify(vs)}   ${Object.entries(titles).map(([k, v]) => k + v).join(' ')}`)
 }
-const seen = {}
-for (const x of rows.none) for (const id of x.deck.split(',')) seen[id] = (seen[id] || 0) + 1
-console.log('\n出た回数（none の', N, '回）:', JSON.stringify(seen))
+// 同じ台本（同じ種）で返事だけ変えた時、同意書の項目がどれだけ重なるか（1=全部同じ）
+const jac = (A, B) => { const a = new Set(A), b = new Set(B); const i = [...a].filter(x => b.has(x)).length; return i / Math.max(1, new Set([...a, ...b]).size) }
+console.log('\n同じ種で返事だけ変えた時の同意書の重なり（項目の一致率、0=まったく別・1=同じ）')
+const names = ['none', 'aga', 'oga', 'ea', 'nn']
+console.log('       ' + names.map(n => n.padStart(6)).join(''))
+for (const x of names) console.log(x.padEnd(7) + names.map(y => (rows[x].reduce((s, r, i) => s + jac(r.items, rows[y][i].items), 0) / N).toFixed(2).padStart(6)).join(''))
+const ex = i => names.map(n => `  ${n.padEnd(5)}: ${rows[n][i].items.join(' ')}`).join('\n')
+console.log('\n例（種 1000）:\n' + ex(0))
 await b.close(); server.kill()

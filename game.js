@@ -69,13 +69,13 @@ function interp1(run, r) {
   if (r === 'oga') return 'huh'
   return run.R() < 0.6 ? 'wild' : 'yes'
 }
-function interp2(run, r, allowHuh) {
+// 頼みごとへの返事。音ごとに同意書の中身が変わる（あが=そのまま / おが=頼みが盛られる / えあ=別の話になる / だまる=そのまま＋おまけ / んー=6割で断れる、4割は聞き間違い）
+function interp2(run, r) {
   if (r == null) return 'silent'
-  const x = run.R()
-  if (r === 'aga') return x < 0.85 ? 'yes' : 'wild'
-  if (r === 'nn') return x < 0.58 ? 'no' : x < 0.85 ? 'mis' : 'wild'
-  if (r === 'oga') return allowHuh ? 'huh' : x < 0.5 ? 'yes' : 'wild'
-  return x < 0.5 ? 'wild' : x < 0.75 ? 'yes' : 'no'   // えあ
+  if (r === 'aga') return 'yes'
+  if (r === 'oga') return 'big'
+  if (r === 'ea') return 'wild'
+  return run.R() < 0.6 ? 'no' : 'mis'
 }
 
 function* segGen(run, s) {
@@ -126,36 +126,36 @@ function* topicSeg(run, tp) {
   if (tp.sfx === 'onsen') out(run, 'bgm:clinic')
 }
 
-// 頼みごとへの返事 → 同意 or 辞退。o.always=断っても同意になる（cn の文）
+// 頼みごとへの返事 → 同意（中身は返事で変わる）or 辞退。断っても cn がある頼みは押し切られる
 function* askCommit(run, tp, who, L) {
   const V = run.vis
-  let r = yield { reply: REPLY_T }
-  let res = interp2(run, r, true), big = false
+  const r = yield { reply: REPLY_T }
+  let res = interp2(run, r)
   V.drill = false
-  if (res === 'huh') {
-    yield { t: 0.5 }
+  if (r) yield { t: 0.5 }
+  const ask = { id: tp.id, prop: tp.prop, how: res, text: '' }
+  run.asks.push(ask)
+  // 解釈の一言（大げさに）。物も解釈に合わせて変わる
+  if (res === 'big') {
     out(run, 'squeak'); V.lean = run.clock
     yield* line(run, who, Lg(run, 'huh'))
-    big = true; if (V.prop) V.prop.mode = 'big'
-    out(run, 'pop')
-    sayNow(run, who, L.q2b, { hold: REPLY_T, big: true })
-    r = yield { reply: REPLY_T }
-    res = interp2(run, r, false)
-  }
-  if (r) yield { t: 0.5 }
-  const ask = { id: tp.id, prop: tp.prop, how: res, big, text: '' }
-  run.asks.push(ask)
-  let committed = res !== 'no' || !!L.cn
-  // 解釈の一言（大げさに）
-  if (res === 'mis') { out(run, 'squeak'); V.lean = run.clock; V.psay = { text: D.ui[lang].misHeard, until: run.clock + 1.5, mis: true }; yield* line(run, who, Lg(run, 'mis')) }
+    if (V.prop) { V.prop.mode = 'big'; V.prop.bigT = run.clock }
+    out(run, 'pop'); out(run, 'pop')
+    yield* line(run, who, L.q2b, { big: true })
+  } else if (res === 'mis') { out(run, 'squeak'); V.lean = run.clock; V.psay = { text: D.ui[lang].misHeard, until: run.clock + 1.5, mis: true }; yield* line(run, who, Lg(run, 'mis')) }
   else if (res === 'silent') {
     if (!run.silentHandUsed) { run.silentHandUsed = true; V.hand = run.clock; out(run, 'air'); yield* line(run, who, Lg(run, 'silentHand')); V.handOff = run.clock }
     else yield* line(run, who, Lg(run, 'silent'))
-  } else if (res === 'wild') { out(run, 'squeak'); out(run, 'giggle'); V.lean = run.clock; yield* line(run, who, L.w) }
-  else if (res === 'no' && committed) { const nl = L.no || (tp.id === 'fight' ? L.winA : null); if (nl) yield* line(run, tp.id === 'fight' ? 'a' : who, nl) }
+  } else if (res === 'wild') {
+    out(run, 'squeak'); out(run, 'giggle'); V.lean = run.clock
+    if (tp.wp) showProp(run, tp.wp); else if (V.prop) { V.prop.mode = 'wild'; V.prop.wT = run.clock }
+    yield* line(run, who, L.w)
+  }
+  const committed = res !== 'no' || !!L.cn
+  if (res === 'no' && committed) { const nl = L.no || (tp.id === 'fight' ? L.winA : null); if (nl) yield* line(run, tp.id === 'fight' ? 'a' : who, nl) }
   if (tp.id === 'fight' && (res === 'yes' || res === 'silent' || res === 'mis')) { V.a = 'glare'; yield* line(run, 'd', L.winD) }
   if (!committed) {
-    ask.text = L.c; ask.how = 'no'
+    ask.text = L.c
     V.tag = { text: L.c, how: 'no', t0: run.clock }
     out(run, 'stamp')
     sayNow(run, who, Lg(run, 'dodge'))
@@ -166,17 +166,35 @@ function* askCommit(run, tp, who, L) {
     V.tag = null; V.prop = null
     return
   }
-  const text = res === 'wild' ? L.cw : res === 'no' ? L.cn : big ? L.cb : L.c
-  ask.text = text; ask.agreed = true
   if (res === 'no') { ask.how = 'over'; res = 'over' }
+  const vi = res === 'wild' ? 2 : res === 'big' ? 1 : 0
+  const text = res === 'wild' ? L.cw : res === 'over' ? L.cn : res === 'big' ? L.cb : L.c
+  ask.text = text; ask.agreed = true; ask.v = res === 'over' ? 'cn' : ['c', 'cb', 'cw'][vi]
+  ask.pts = res === 'over' ? tp.s[0] : tp.s[vi]
   if (tp.id === 'loan') { V.prop.footT = run.clock; out(run, 'thwack'); yield { t: 0.45 } }
   V.tag = { text, how: res, t0: run.clock }
   sayNow(run, who, Lg(run, 'commit'))
   out(run, 'stamp'); out(run, 'commit:' + (tp.sfx || '')); V.flash = run.clock; V.shake = run.clock
-  yield { t: 1.9 }
+  yield { t: 1.0 }
+  // 同意した直後の反応（話ごとに絵で返す）
+  V.react = { kind: tp.react, t0: run.clock, k: (V.prop && V.prop.k) || tp.prop, big: res === 'big' }
+  out(run, 'react:' + tp.react)
+  yield { t: 1.5 }
+  V.react = null
+  // だまっていたら、おまけの頼みが足される
+  if (res === 'silent') {
+    const B = D.bonus[lang]
+    if (!run.bonusOrder) { run.bonusOrder = B.map((_, i) => i); for (let i = B.length - 1; i > 0; i--) { const j = Math.floor(run.R() * (i + 1)); [run.bonusOrder[i], run.bonusOrder[j]] = [run.bonusOrder[j], run.bonusOrder[i]] } run.bonusI = 0 }
+    const bi = run.bonusOrder[run.bonusI++ % B.length]
+    ask.bonus = B[bi]; ask.pts += 2
+    V.tag = { text: '＋' + B[bi], how: 'bonus', t0: run.clock }
+    sayNow(run, who, T('bonusSay'))
+    out(run, 'stamp'); V.shake = run.clock
+    yield { t: 1.7 }
+  }
   if (V.prop) { V.prop.mode = 'tray'; V.prop.tT = run.clock }
   V.tag = null
-  run.tray.push(tp.prop)
+  run.tray.push((V.prop && V.prop.k !== 'p_hose' && V.prop.k) || tp.prop)
   out(run, 'tray')
   yield { t: 0.55 }
   V.prop = null
@@ -310,17 +328,19 @@ function reply(run, k) {
 function finish(run) {
   run.done = true
   const A = run.asks.length, ag = run.asks.filter(a => a.agreed), n = ag.length
-  const silent = run.asks.filter(a => a.how === 'silent').length, wild = run.asks.filter(a => a.how === 'wild').length
+  const cnt = k => run.asks.filter(a => a.how === k).length
   let tk
   if (ag.some(a => a.id === 'heir')) tk = 'heir'
   else if (n === 0) tk = 'zero'
-  else if (silent >= A - 1 && n >= A - 1) tk = 'silent'
-  else if (wild >= 3) tk = 'wild'
+  else if (cnt('silent') >= A - 1) tk = 'silent'
+  else if (cnt('big') >= 3 && cnt('big') >= cnt('wild')) tk = 'big'
+  else if (cnt('wild') >= 3) tk = 'wild'
   else if (n >= A - 1) tk = 'all'
   else if (n >= A * 0.6) tk = 'many'
   else if (n >= A * 0.35) tk = 'some'
   else tk = 'few'
   run.titleKey = tk; run.n = n; run.A = A
+  run.sev = ag.reduce((s, a) => s + (a.pts || 0), 0)
   out(run, 'end')
 }
 
@@ -337,13 +357,22 @@ function simulate(bot, seed, o = {}) {
     if (plan && replyOpen(run) && run.clock >= plan.at) { if (plan.k) reply(run, plan.k); plan = null }
     tick(run)
   }
-  return { bot, seed, n: run.n, A: run.A, title: run.titleKey, len: +run.clock.toFixed(1), deck: run.deck.map(s => s.id || s.k).join(','), hows: run.asks.map(a => a.how).join(',') }
+  return { bot, seed, n: run.n, A: run.A, sev: run.sev, title: run.titleKey, len: +run.clock.toFixed(1), deck: run.deck.map(s => s.id || s.k).join(','), hows: run.asks.map(a => a.how).join(','), items: run.asks.filter(a => a.agreed).flatMap(a => [a.id + ':' + a.v].concat(a.bonus ? ['bonus:' + a.bonus] : [])) }
 }
 
 // ================================================================ 画面
 const views = ['vLoad', 'vTitle', 'vHow', 'vPlay', 'vResult']
 function show(id) { for (const v of views) $('#' + v).hidden = v !== id; if (id === 'vResult') fitKarte() }
 function mouthSvg(k) { return `<svg viewBox="0 0 80 60"><use href="#m-${k}"/></svg>` }
+// 図鑑: 話・出来事ごとに 同意(c)・盛った(cb)・謎(cw)・押し切り(cn) の項目
+const ZK_TOTAL = D.topics.concat(D.events).reduce((s, x) => s + 3 + (x.ja.cn ? 1 : 0), 0)
+function zkLoad() { try { return new Set(JSON.parse(localStorage.getItem('dh_zk') || '[]')) } catch (e) { return new Set() } }
+function zkSave(z) { try { localStorage.setItem('dh_zk', JSON.stringify([...z])) } catch (e) {} }
+function bestLoad() { try { return +(localStorage.getItem('dh_best') || 0) } catch (e) { return 0 } }
+function goalLine() {
+  const el = $('#tGoal'); if (!el) return
+  el.innerHTML = `<b>${T('goal')}</b><br>${T('zk')} ${zkLoad().size}/${ZK_TOTAL}・${T('best')} ${bestLoad()}${T('pts')}`
+}
 function applyLang() {
   document.documentElement.lang = lang
   document.querySelectorAll('[data-t]').forEach(el => { const v = T(el.dataset.t); if (typeof v === 'string') el.textContent = v })
@@ -352,7 +381,7 @@ function applyLang() {
   $('#howWho').innerHTML = T('howWho')
   document.querySelectorAll('.mb').forEach(b => { b.querySelector('b').textContent = T('replies')[b.dataset.r]; b.setAttribute('aria-label', T('replies')[b.dataset.r]) })
   const d = new Date(); $('#appt').innerHTML = `${d.getMonth() + 1}/${d.getDate()}<br>14:30`
-  sndLabel()
+  sndLabel(); goalLine()
 }
 let muted = (() => { try { return localStorage.getItem('dh_mute') === '1' } catch (e) { return false } })()
 function sndLabel() { $('#bSnd').textContent = `${T('sound')}: ${muted ? T('off') : T('on')}`; $('#bMute').textContent = muted ? '×' : T('mute'); $('#bMute').classList.toggle('off', muted) }
@@ -392,6 +421,7 @@ function cue(k) {
     Snd.duck(0.35, 1.6)
     return
   }
+  if (k.startsWith('react:')) { const m = { rain: 'pop', cry: 'giggle', facepalm: 'thwack', peek: 'door', dance: 'applause' }[k.slice(6)]; if (m) Snd.play(m, { vol: m === 'applause' ? 0.45 : 0.6 }); return }
   const vol = { stamp: 1, swish: 0.5, tray: 0.5, squeak: 0.8, pop: 0.7, thwack: 0.9, door: 0.8, slurp: 0.9, bubble: 0.6, giggle: 0.35, applause: 0.55, air: 0.4, drillStart: 0.5 }[k]
   if (vol != null) Snd.play(k, { vol, jitter: k === 'stamp' ? 0 : 0.06 })
 }
@@ -509,16 +539,20 @@ function render() {
   if (!run) return
   const r = run, V = r.vis, t = r.clock
   if (poses.d !== V.d) { setOn(docEl, V.d); poses.d = V.d }
-  if (poses.a !== V.a) { setOn(asstEl, V.a); poses.a = V.a }
+  const RX = V.react, rk = RX ? RX.kind : '', rt = RX ? t - RX.t0 : 0
+  const aP = rk === 'facepalm' ? 'glare' : V.a
+  if (poses.a !== aP) { setOn(asstEl, aP); poses.a = aP }
   if (poses.b !== V.bossPose) { setOn(bossEl, V.bossPose); poses.b = V.bossPose }
-  const bob = V.bob ? Math.sin(t * 9.4) : 0
+  const bob = V.bob || rk === 'dance' ? Math.sin(t * 9.4) : rk === 'cry' ? Math.sin(t * 16) * 0.45 : 0
   const leanK = clamp01(1 - (t - V.lean) / 0.9), lean = leanK > 0 ? Math.sin(Math.min(1, (t - V.lean) / 0.18) * Math.PI / 2) * leanK : 0
   docX += ((V.docOff ? -0.75 : 0) - docX) * 0.12
   docEl.style.transform = `translate(${(docX * 100).toFixed(1)}%,${(bob * 2.2 + lean * 3).toFixed(2)}%) scale(${(1 + lean * 0.14).toFixed(3)}) rotate(${(bob * 3).toFixed(2)}deg)`
-  asstEl.style.transform = `translateY(${(bob * -2).toFixed(2)}%) rotate(${(bob * -3).toFixed(2)}deg)` + (V.a === 'glare' ? ` translateX(${(Math.sin(t * 40) * 0.6).toFixed(2)}%)` : '')
-  const bossTarget = V.boss ? 0 : V.peek ? -0.55 : -1.2
+  asstEl.style.transform = `translateY(${(bob * -2).toFixed(2)}%) rotate(${(bob * -3).toFixed(2)}deg)` + (rk === 'facepalm' ? ` translateX(${(Math.sin(t * 26) * 2.4).toFixed(2)}%) rotate(${(Math.sin(t * 26) * 4).toFixed(1)}deg)` : aP === 'glare' ? ` translateX(${(Math.sin(t * 40) * 0.6).toFixed(2)}%)` : '')
+  const bossTarget = V.boss ? 0 : V.peek || rk === 'peek' ? -0.55 : -1.2
   bossX += (bossTarget - bossX) * 0.12
-  bossEl.style.transform = `translateX(${(bossX * 100).toFixed(1)}%)`
+  bossEl.style.transform = `translateX(${(bossX * 100).toFixed(1)}%)` + (rk === 'peek' || (V.boss && rk === 'dance') ? ` translateY(${(Math.sin(t * 9.4) * 2).toFixed(2)}%) rotate(${(Math.sin(t * 9.4) * 3).toFixed(1)}deg)` : '')
+  // 同意した直後の反応: 物が降ってくる / 先生がうれし泣き
+  renderReact(rk, rt, RX, t)
   // ドリル（音楽の時はリズムに合わせて跳ねる。飛んだら天井に刺さったまま）
   const dr = $('#drill')
   const beat = Math.floor(t * 4) % 8, PAT = [1, 1.26, 1.5, 1.26, 1, 0.84, 1.12, 1.5]
@@ -580,6 +614,27 @@ function render() {
   if (open) { const k = clamp01((r.wait.until - t) / r.wait.dur); fuse.style.opacity = 1; fuse.style.transform = `scaleX(${k.toFixed(3)})` } else fuse.style.opacity = 0
   drawMon(r)
 }
+const rainEls = [], tearEls = [...document.querySelectorAll('#tears i')]
+for (let i = 0; i < 9; i++) { const im = document.createElement('img'); im.alt = ''; $('#rain').appendChild(im); rainEls.push(im) }
+function renderReact(rk, rt, RX, t) {
+  const rainOn = rk === 'rain'
+  if (rainOn && rainEls[0].dataset.k !== RX.k) { for (const im of rainEls) { im.src = propUrl(RX.k); im.dataset.k = RX.k } }
+  rainEls.forEach((im, i) => {
+    if (!rainOn) { im.style.opacity = 0; return }
+    const d = i * 0.11, q = Math.max(0, rt - d), y = -30 + q * 120 * (1 + (i % 3) * 0.2)
+    im.style.opacity = q > 0 ? 1 : 0
+    im.style.left = ((i * 37) % 90 - 4) + '%'
+    im.style.transform = `translateY(${y.toFixed(0)}vh) rotate(${((i % 2 ? 1 : -1) * q * 260 + i * 40).toFixed(0)}deg) scale(${(0.7 + (i % 3) * 0.2).toFixed(2)})`
+  })
+  // 涙（目の位置から落ちる。両目×2滴）
+  const eyes = [[14, 15.5], [36, 15], [15, 16], [37, 15.5]]
+  tearEls.forEach((el, i) => {
+    if (rk !== 'cry') { el.style.opacity = 0; return }
+    const ph = ((rt + i * 0.27) % 0.8) / 0.8
+    el.style.left = eyes[i][0] + '%'; el.style.top = (eyes[i][1] + ph * 14) + '%'
+    el.style.opacity = (1 - ph).toFixed(2)
+  })
+}
 function renderProp(V, t) {
   const pr = $('#prop'), img = $('#propImg'), foot = $('#footImg'), tag = $('#tag')
   const P = V.prop
@@ -589,7 +644,12 @@ function renderProp(V, t) {
     img.style.visibility = P.noimg ? 'hidden' : ''
     const k = clamp01((t - P.t0) / 0.5), kb = back(k)
     let x = (-70 + 70 * kb), y = (-40 + 40 * kb), s = 0.25 + 0.75 * kb, rot = -40 + 36 * kb + Math.sin(t * 2.6) * 3, op = 1
-    if (P.mode === 'big') s *= 1.22 + Math.sin(t * 7) * 0.03
+    const cps = [$('#propImg2'), $('#propImg3')]
+    if (P.mode === 'big') {
+      const q = ease(clamp01((t - (P.bigT || t)) / 0.35)); s *= 1 + 0.18 * q + Math.sin(t * 7) * 0.03
+      cps.forEach((c, i) => { if (c.dataset.k !== P.k) { c.dataset.k = P.k; c.src = u } c.style.visibility = P.noimg ? 'hidden' : ''; c.style.opacity = q; c.style.transform = `translate(${((i ? 1 : -1) * 46 * q).toFixed(0)}%,${(8 * q).toFixed(0)}%) rotate(${((i ? 1 : -1) * 18 * q).toFixed(0)}deg) scale(${(0.82).toFixed(2)})` })
+    } else cps.forEach(c => { c.style.opacity = 0 })
+    if (P.mode === 'wild') { const q = clamp01((t - P.wT) / 0.5); rot += 540 * ease(q); s *= 1 + 0.25 * Math.sin(q * Math.PI) }
     if (P.suckT >= 0) { const q = clamp01((t - P.suckT) / 0.7); x += 34 * q; y += 2 * q; s *= 1 - 0.92 * q; rot += 200 * q; op = 1 - q }
     if (P.mode === 'out') { const q = clamp01((t - P.tO) / 0.6); x += 120 * q * q; y -= 20 * q; rot += 120 * q; op = 1 - q }
     if (P.mode === 'tray') { const q = ease(clamp01((t - P.tT) / 0.5)); x += 26 * q; y -= 44 * q; s *= 1 - 0.85 * q; op = 1 - q * 0.9 }
@@ -623,7 +683,15 @@ function endGame() {
   cancelAnimationFrame(raf); drillSound(1, 0, false); Snd.loop('suck', null); render.suck = false; Snd.loop('bgm', 'snd/bgm_clinic.mp3', 0.12)
   const r = run
   const tt = D.titles[lang][r.titleKey]
-  result = { n: r.n, A: r.A, key: r.titleKey, title: tt[0], last: tt[1], asks: r.asks.map(a => ({ ...a })), seed: r.seed, replies: r.replies.slice() }
+  result = { n: r.n, A: r.A, sev: r.sev, key: r.titleKey, title: tt[0], last: tt[1], asks: r.asks.map(a => ({ ...a })), seed: r.seed, replies: r.replies.slice() }
+  // 図鑑（同意した項目）と、いちばんひどい同意書
+  const zk = zkLoad(), before = zk.size
+  for (const a of r.asks) if (a.agreed) zk.add(a.id + ':' + a.v)
+  zkSave(zk)
+  result.zk = zk.size; result.zkNew = zk.size - before; result.zkTotal = ZK_TOTAL
+  const best = bestLoad(); result.bestBefore = best; result.best = Math.max(best, r.sev); result.newBest = r.sev > best && r.sev > 0
+  try { localStorage.setItem('dh_best', String(result.best)) } catch (e) {}
+  goalLine()
   if (window.TM) TM.end(r.n, true)
   clearTimeout(endGame.to); endGame.to = setTimeout(() => { show('vResult'); reveal() }, 600)
 }
@@ -692,8 +760,9 @@ function drawForm(rows, showTitle, ts) {
     if (i >= rows) return
     g.font = `600 ${fs}px ${hand}`; g.fillStyle = a.agreed ? '#1f2a44' : '#9aa0a3'
     const tx = 100, maxW = W - 56 - rh * 1.25 - tx - 10
-    g.fillText(a.text, tx, cy + 1, maxW)
-    if (!a.agreed) { const tw = Math.min(maxW, g.measureText(a.text).width); g.strokeStyle = '#8a8f92'; g.lineWidth = 2.5; g.beginPath(); g.moveTo(tx, cy + 1); g.lineTo(tx + tw, cy + 1); g.stroke() }
+    const rowT = a.bonus ? `${a.text} ＋${a.bonus}` : a.text
+    g.fillText(rowT, tx, cy + 1, maxW)
+    if (!a.agreed) { const tw = Math.min(maxW, g.measureText(rowT).width); g.strokeStyle = '#8a8f92'; g.lineWidth = 2.5; g.beginPath(); g.moveTo(tx, cy + 1); g.lineTo(tx + tw, cy + 1); g.stroke() }
     const sx = W - 56 - rh * 0.6, rad = Math.min(30, rh * 0.42), rot = -0.25 + ((i * 37) % 10) / 20
     const foot = imgCache[propUrl('p_footseal')]
     if (a.id === 'loan' && a.agreed && foot && foot.naturalWidth) { g.save(); g.translate(sx, cy); g.rotate(-0.5); const fh = rh * 1.05, fw = fh * foot.naturalWidth / foot.naturalHeight; g.drawImage(foot, -fw / 2, -fh / 2, fw, fh); g.restore() }
@@ -707,6 +776,13 @@ function drawForm(rows, showTitle, ts) {
   g.font = `600 64px ${hand}`; g.fillStyle = '#c8322b'; g.fillText(String(rows >= N ? R.n : R.asks.slice(0, rows).filter(a => a.agreed).length), 56 + lw + 14, by + 34)
   const nw = g.measureText(String(R.n)).width
   g.font = `400 26px ${ui}`; g.fillStyle = '#5d6467'; g.fillText(`${T('formOf')}${N}${T('formAsk')}`, 56 + lw + 14 + nw + 10, by + 26)
+  if (showTitle) {
+    g.font = `400 26px ${ui}`
+    let x = 56 + lw + 14 + nw + 10 + g.measureText(`${T('formOf')}${N}${T('formAsk')}`).width + 36
+    g.fillStyle = '#5d6467'; g.fillText(T('sev'), x, by + 26); x += g.measureText(T('sev')).width + 12
+    g.font = `600 56px ${hand}`; g.fillStyle = '#1f2a44'; g.fillText(String(R.sev), x, by + 32); x += g.measureText(String(R.sev)).width + 6
+    g.font = `400 26px ${ui}`; g.fillStyle = R.newBest ? '#c8322b' : '#5d6467'; g.fillText(T('pts') + (R.newBest ? (lang === 'ja' ? ' 最高記録' : ' best') : ''), x, by + 26)
+  }
   // 担当の写真と最後の一言
   const py = by + 70
   const ph = imgCache['img/dentist_look.webp?v=2']
@@ -715,7 +791,7 @@ function drawForm(rows, showTitle, ts) {
   if (showTitle) { g.font = `600 30px ${hand}`; g.fillStyle = '#1f2a44'; wrapText(g, R.last, 200, py + 68, W - 112 - 290 - 144, 40, 3) }
   // 称号のハンコ
   if (showTitle) {
-    const k = Math.max(1, 1.8 - Math.max(0, ts) * 4), cx = W - 180, cy = py + 40
+    const k = Math.max(1, 1.8 - Math.max(0, ts) * 4), cx = W - 180, cy = py + 74
     g.save(); g.translate(cx, cy); g.rotate(-0.16); g.scale(k, k)
     g.globalAlpha = 0.9; g.strokeStyle = '#c8322b'; g.fillStyle = '#c8322b'; g.lineWidth = 7
     g.beginPath(); g.arc(0, 0, 128, 0, 7); g.stroke(); g.lineWidth = 3; g.beginPath(); g.arc(0, 0, 115, 0, 7); g.stroke()
@@ -730,6 +806,7 @@ function drawForm(rows, showTitle, ts) {
     g.restore(); g.textAlign = 'left'; g.globalAlpha = 1
   }
   g.font = `400 22px ${ui}`; g.fillStyle = '#7b8486'; g.fillText('tom3games.github.io/dentist-hand', 56, H - 46)
+  if (showTitle && R.zk != null) { g.textAlign = 'right'; g.fillStyle = '#5d6467'; g.fillText(`${T('zk')} ${R.zk}/${R.zkTotal}` + (R.zkNew ? `（${T('newN')}+${R.zkNew}）` : ''), W - 56, H - 46); g.textAlign = 'left' }
 }
 function toast(msg) { const m = $('#rMsg'); m.textContent = msg; m.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => { m.hidden = true }, 1600) }
 $('#bSave').onclick = async () => {

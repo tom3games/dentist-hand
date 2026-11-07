@@ -126,39 +126,59 @@ await t('台本: 話6つ＋出来事3つ、最後は話。2000回で全部の話
   const all = ['wedding', 'moving', 'dog', 'onsen', 'band', 'ring', 'marathon', 'armband', 'mascot', 'sub', 'loan', 'boss', 'fight', 'phone', 'music', 'ball', 'heir', 'fly', 'bday']
   expect(r.bad === 0 && all.every(i => r.seen[i] > 0) && r.rare > 0.08 && r.rare < 0.16, r); return { rare: r.rare, loanLast: r.loanLast, min: Math.min(...all.map(i => r.seen[i])) }
 })
-await t('返事のくせ: だまる=全部同意 / あが=ほぼ同意 / んー=半分くらい断れる / おが=頼みが大きくなる（bot 40回ずつ）', async () => {
+await t('返事のくせ: だまる・あが=全部同意 / んー=6割断れる / おが・えあ=称号も変わる（bot 40回ずつ）', async () => {
   const r = await p.evaluate(() => {
     const s = {}
     for (const b of ['none', 'aga', 'nn', 'oga', 'ea', 'random']) { const a = []; for (let i = 0; i < 40; i++) a.push(dh.simulate(b, 1000 + i * 7919)); s[b] = { n: a.reduce((x, y) => x + y.n, 0) / 40, A: a[0].A, len: [Math.min(...a.map(x => x.len)), Math.max(...a.map(x => x.len))], titles: [...new Set(a.map(x => x.title))].join(',') } }
     return s
   })
-  expect(r.none.n === r.none.A && r.none.titles === 'silent' && r.aga.n >= r.aga.A - 0.5 && r.nn.n < r.aga.n - 2.5 && r.nn.n > 2 && r.none.len[1] <= 150 && r.aga.len[0] >= 60, r)
+  expect(r.none.n === r.none.A && r.none.titles === 'silent' && r.aga.n === r.aga.A && r.nn.n < r.aga.n - 2.5 && r.nn.n > 2 && r.none.len[1] <= 160 && r.aga.len[0] >= 60 && r.oga.titles === 'big' && r.ea.titles === 'wild', r)
   return Object.fromEntries(Object.entries(r).map(([k, v]) => [k, `${v.n.toFixed(1)}/${v.A} ${v.len.join('-')}s ${v.titles}`]))
 })
 await t('同じ種・同じ返事なら同じ結果', async () => {
   const r = await p.evaluate(() => [dh.simulate('random', 42), dh.simulate('random', 42), dh.simulate('random', 43)])
   expect(r[0].hows === r[1].hows && r[0].n === r[1].n, r); return r[0].hows
 })
-await t('「おが」で頼みが盛られる（q2b が出て、同意の文が大きい版）', async () => {
-  await begin(5, { topics: ['wedding'], events: [] })
-  const r = await p.evaluate(() => {
-    dh.dbg.toReply(); dh.reply('aga'); dh.dbg.toReply()   // 前ふり → 頼みごと
-    dh.reply('oga'); dh.dbg.toReply()                     // 「え？」→ 盛った頼み
-    const say = dh.run.vis.say && dh.run.vis.say.text
-    dh.reply('aga'); dh.dbg.step(260)
-    return { say, ask: dh.run.asks[0], q2b: dh.D.topics[0].ja.q2b }
-  })
-  expect(r.say === r.q2b && r.ask.big && r.ask.agreed, r); return { how: r.ask.how, text: r.ask.text }
-})
-await t('だまっていると「はい」。最初の沈黙で手が勝手に挙がる', async () => {
+await t('だまっていると「はい」。最初の沈黙で手が勝手に挙がり、おまけの頼みが足される', async () => {
   await begin(9, { topics: ['dog'], events: [] })
   const r = await p.evaluate(() => {
     dh.dbg.toReply(); dh.dbg.skipReply(); dh.dbg.toReply(); dh.dbg.skipReply(); dh.dbg.step(30)
     const hand = dh.run.vis.hand >= 0 && document.querySelector('#hand').getBoundingClientRect().top < innerHeight
-    dh.dbg.step(400)
+    dh.dbg.step(600)
     return { hand, ask: dh.run.asks[0] }
   })
-  expect(r.hand && r.ask.how === 'silent' && r.ask.agreed, r); return r.ask.how
+  expect(r.hand && r.ask.how === 'silent' && r.ask.agreed && r.ask.bonus, r); return r.ask.text + '＋' + r.ask.bonus
+})
+await t('同じ話でも返事で同意書の中身が変わる（あが=そのまま/おが=盛った頼み/えあ=別の話・別の物/だまる=そのまま＋おまけ/んー=断るか聞き間違い）', async () => {
+  const out = {}
+  for (const k of ['aga', 'oga', 'ea', null, 'nn']) {
+    await begin(5, { topics: ['moving'], events: [] })
+    out[k || 'none'] = await p.evaluate(k => {
+      dh.dbg.toReply(); dh.reply('aga'); dh.dbg.toReply()
+      if (k) dh.reply(k); else dh.dbg.skipReply()
+      let n = 0, react = null, pk = null; while (!dh.run.done && n++ < 900) { dh.dbg.step(1); const V = dh.run.vis; if (V.react) { react = V.react.kind; pk = V.react.k } }
+      const a = dh.run.asks[0]
+      return { prop: pk, text: a.text, v: a.v, how: a.how, bonus: a.bonus || '', react, pts: a.pts }
+    }, k)
+  }
+  const texts = new Set([out.aga.text, out.oga.text, out.ea.text, out.none.text + out.none.bonus])
+  expect(texts.size === 4 && out.aga.v === 'c' && out.oga.v === 'cb' && out.ea.v === 'cw' && out.ea.prop === 'p_key' && out.none.bonus && out.aga.react === 'facepalm' && ['no', 'mis'].includes(out.nn.how), out)
+  return Object.fromEntries(Object.entries(out).map(([k, x]) => [k, x.text + (x.bonus ? '＋' + x.bonus : '') + ' ' + x.pts + '点']))
+})
+await t('同意した直後に話ごとの反応が出る（物が降る・うれし泣き・助手があきれる・院長がのぞく・踊る）', async () => {
+  const seen = {}
+  for (const id of ['dog', 'ring', 'sub', 'onsen', 'band']) {
+    await begin(6, { topics: [id], events: [] })
+    seen[id] = await p.evaluate(() => {
+      dh.dbg.toReply(); dh.reply('aga'); dh.dbg.toReply(); dh.reply('aga')
+      let n = 0; while (!dh.run.vis.react && n++ < 600) dh.dbg.step(1); dh.dbg.step(30)
+      const vis = sel => [...document.querySelectorAll(sel)].filter(e => +getComputedStyle(e).opacity > 0.05).length
+      return { kind: dh.run.vis.react && dh.run.vis.react.kind, rain: vis('#rain img'), tears: vis('#tears i'), asst: document.querySelector('#asst img.on').dataset.k, boss: document.querySelector('#boss').getBoundingClientRect().right > 0 }
+    })
+    if (id === 'dog' || id === 'ring') await p.screenshot({ path: ROOT + `/shots/v-react-${id}.png` })
+  }
+  expect(seen.dog.kind === 'rain' && seen.dog.rain >= 3 && seen.ring.kind === 'cry' && seen.ring.tears >= 2 && seen.sub.asst === 'glare' && seen.onsen.boss && seen.band.kind === 'dance', seen)
+  return Object.fromEntries(Object.entries(seen).map(([k, x]) => [k, x.kind]))
 })
 await t('全部の話・出来事を通せる（11話＋8出来事を1回で。返事はばらばら）・物と絵の仕掛けが動く', async () => {
   await begin(77, { topics: ALL_T, events: ALL_E })
@@ -195,7 +215,8 @@ await t('結果: 同意書が描けていて、保存・Xでポスト（文に�
   const dl = p.waitForEvent('download', { timeout: 4000 }).catch(() => null)
   await p.click('#bSave'); const d = await dl
   const sup = await p.evaluate(() => !!document.querySelector('#tmSupport'))
-  expect(v > 400 && /9件に同意/.test(post) && /沈黙の契約王/.test(post) && /#口を開けたまま同意しました/.test(post) && /tom3games\.github\.io\/dentist-hand/.test(post) && d && sup, { v, post, d: !!d, sup }); return { v, file: d && d.suggestedFilename() }
+  const zk = await p.evaluate(() => [dh.result.sev, dh.result.zk, dh.result.zkTotal, document.querySelector('#tGoal').textContent])
+  expect(zk[0] > 0 && zk[1] >= 9 && zk[2] === 61 && /図鑑/.test(zk[3]) && /ひどさ\d+点/.test(post) && v > 400 && /9件に同意/.test(post) && /沈黙の契約王/.test(post) && /#口を開けたまま同意しました/.test(post) && /tom3games\.github\.io\/dentist-hand/.test(post) && d && sup, { v, post, d: !!d, sup }); return { v, file: d && d.suggestedFilename() }
 })
 
 // ---- 本物の指（マウス）で口のボタンを押す

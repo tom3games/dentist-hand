@@ -64,8 +64,10 @@ button{font-family:inherit;color:inherit;background:none;border:0;cursor:pointer
 .card .row b{font-weight:600;border-bottom:1px solid #b9b2a3;padding:0 18px 0 2px}
 .card .appt{width:58px;height:58px;border:2px solid var(--red);border-radius:50%;color:var(--red);font-size:15px;line-height:1.15;display:grid;place-items:center;text-align:center;transform:rotate(12deg);opacity:.85;font-weight:700}
 #tMouths{display:flex;gap:4px;justify-content:flex-start;margin-top:10px}
+#tGoal{position:relative;margin-top:2.4svh;font-size:14px;line-height:1.5;color:#22272b;background:rgba(251,250,246,.8);padding:6px 14px;border-radius:6px;text-align:center}
+#tGoal b{color:var(--red)}
 #tMouths svg{width:46px;height:34px}
-#bStart{position:relative;margin-top:5svh;min-width:220px;height:58px;padding:0 28px;border-radius:30px;background:var(--mint);color:#fff;font-size:20px;font-weight:700;letter-spacing:.12em;box-shadow:0 5px 0 var(--mint-dk)}
+#bStart{position:relative;margin-top:3svh;min-width:220px;height:58px;padding:0 28px;border-radius:30px;background:var(--mint);color:#fff;font-size:20px;font-weight:700;letter-spacing:.12em;box-shadow:0 5px 0 var(--mint-dk)}
 #bStart:active{transform:translateY(3px);box-shadow:0 2px 0 var(--mint-dk)}
 .small{position:relative;display:flex;gap:6px;margin-top:3svh}
 .small button{min-height:44px;padding:0 14px;font-size:15px;color:var(--ink);background:rgba(251,250,246,.72);border-radius:6px}
@@ -120,6 +122,11 @@ button{font-family:inherit;color:inherit;background:none;border:0;cursor:pointer
 #feet img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:bottom;opacity:0}
 #feet img.on{opacity:1}
 #propImg{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 14px 16px rgba(30,20,10,.35))}
+#prop .cp{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:contain;opacity:0;filter:drop-shadow(0 10px 12px rgba(30,20,10,.3))}
+#rain{position:absolute;inset:0;pointer-events:none;z-index:5;overflow:hidden}
+#rain img{position:absolute;top:0;width:22%;opacity:0;filter:drop-shadow(0 6px 8px rgba(0,0,0,.25))}
+#tears{position:absolute;inset:0;pointer-events:none;z-index:3}
+#tears i{position:absolute;width:22px;height:34px;box-shadow:0 0 0 2px rgba(255,255,255,.6);border-radius:50% 50% 50% 50%/60% 60% 40% 40%;background:radial-gradient(circle at 35% 35%,#fff,rgba(120,190,235,.95) 50%,rgba(60,140,200,.85));opacity:0}
 #footImg{position:absolute;left:28%;top:0;width:44%;opacity:0;filter:drop-shadow(0 10px 10px rgba(0,0,0,.35))}
 #tag{position:absolute;left:50%;top:calc(var(--py) + var(--ph) + 8px);max-width:90vw;background:#fbfaf6;padding:8px 16px;font-family:var(--hand);font-size:17px;line-height:1.3;font-weight:600;color:#1f2a44;box-shadow:0 6px 14px -6px rgba(0,0,0,.45);z-index:4;pointer-events:none;white-space:nowrap;opacity:0;transform:translateX(-50%) rotate(-2deg)}
 #tag::before{content:"";position:absolute;inset:3px;border:1px solid #cfc7b7;pointer-events:none}
@@ -216,6 +223,7 @@ button{font-family:inherit;color:inherit;background:none;border:0;cursor:pointer
     <div id="tMouths"><svg><use href="#m-aga"/></svg><svg><use href="#m-oga"/></svg><svg><use href="#m-nn"/></svg><svg><use href="#m-ea"/></svg></div>
     <div class="row"><b data-t="patient"></b><span class="appt" id="appt"></span></div>
   </div>
+  <p id="tGoal"></p>
   <button id="bStart" data-t="start"></button>
   <div class="small"><button id="bHow" data-t="how"></button><button id="bLang" data-t="lang"></button><button id="bSnd"></button></div>
 </main>
@@ -245,7 +253,9 @@ button{font-family:inherit;color:inherit;background:none;border:0;cursor:pointer
     <div id="glow"></div>
     <div id="vig"></div>
   </div>
-  <div id="prop"><img id="propImg" alt=""><img id="footImg" src="img/p_footseal.webp?v=3" alt=""></div>
+  <div id="rain"></div>
+  <div id="tears"><i></i><i></i><i></i><i></i></div>
+  <div id="prop"><img class="cp" id="propImg2" alt=""><img class="cp" id="propImg3" alt=""><img id="propImg" alt=""><img id="footImg" src="img/p_footseal.webp?v=3" alt=""></div>
   <div id="tag"><span id="tagT"></span></div>
   <div id="bigHk"></div>
   <div id="hand"><img src="img/hand_up.webp?v=2" alt=""></div>
@@ -298,8 +308,8 @@ button{font-family:inherit;color:inherit;background:none;border:0;cursor:pointer
 </script>
 <script src="tm.js?v=3" data-game="dentist-hand"></script>
 <script src="sfx.js?v=3"></script>
-<script src="data.js?v=4"></script>
-<script src="game.js?v=3"></script>
+<script src="data.js?v=5"></script>
+<script src="game.js?v=4"></script>
 <script src="support.js?v=4" data-ja="歯ブラシ" data-en="a toothbrush"></script>
 </body>
 </html>
