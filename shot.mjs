@@ -17,11 +17,11 @@ const tag = `${W}x${H}${process.env.EN ? '-en' : ''}`
 await p.screenshot({ path: `shots/s-${tag}-title.png` })
 await p.click('#bHow'); await p.waitForTimeout(200); await p.screenshot({ path: `shots/s-${tag}-how.png` })
 await p.click('#bHowGo'); await p.evaluate(() => { dh.dbg.pause(true); dh.startGame({ seed: 1000, tutorial: false, boss: false }) })
-const S = await p.evaluate(() => { const S = dh.run.S; return { spikes: S.spikes, blocks: S.blocks } })
-const sp = S.spikes.find(x => x.pat === 'B') || S.spikes[0], spA = S.spikes.find(x => x.pat === 'A') || S.spikes[0]
+const S = await p.evaluate(() => ({ ev: dh.run.S.ev, blocks: dh.run.S.blocks }))
+const A = S.ev.find(x => x.kind === 'bad' && x.pat === 'A'), B = S.ev.find(x => x.kind === 'bad' && x.pat === 'B'), Cv = S.ev.find(x => x.kind === 'cav'), Dd = S.ev.find(x => x.kind === 'bad' && (x.pat === 'D' || x.pat === 'C'))
 const at = async (tt, name) => { await p.evaluate(tt => dh.dbg.to(tt), tt); await p.waitForTimeout(250); await p.screenshot({ path: `shots/s-${tag}-${name}.png` }) }
 const rinse = S.blocks.find(x => x.kind === 'rinse'), chat = S.blocks.find(x => x.kind === 'chat')
-const plan = [[2, 'intro'], [spA.w0 - 1.2, 'hum'], [spA.w0 + 0.6, 'warnLook', true], [sp.p0 + 0.9, 'pain'], [rinse.a + 3.6, 'rinse'], [chat.a + 2.6, 'chat']].sort((x, y) => x[0] - y[0])
+const plan = [[2, 'intro'], [A.a0 + 0.7, 'badLook', true], [Cv.contact + 0.4, 'cavDrill'], [Dd.end + 0.2, 'silver'], [rinse.a + 3.6, 'rinse'], [chat.a + 2.6, 'chat']].sort((x, y) => x[0] - y[0])
 for (const [tt, name, up] of plan) {
   await at(tt, name)
   if (up) { await p.evaluate(() => { dh.raise(); dh.dbg.step(30) }); await p.waitForTimeout(250); await p.screenshot({ path: `shots/s-${tag}-${name}-raised.png` }) }

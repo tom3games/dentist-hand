@@ -9,12 +9,12 @@
 <meta property="og:type" content="website">
 <meta property="og:title" content="痛かったら手を挙げてください">
 <meta property="og:description" content="歯医者で手を挙げても気づかれない。鼻歌が止まる瞬間を読んで挙げろ。">
-<meta property="og:image" content="https://tom3games.github.io/dentist-hand/og.png?v=1">
+<meta property="og:image" content="https://tom3games.github.io/dentist-hand/og.png?v=2">
 <meta property="og:url" content="https://tom3games.github.io/dentist-hand/">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="痛かったら手を挙げてください">
 <meta name="twitter:description" content="歯医者で手を挙げても気づかれない。鼻歌が止まる瞬間を読んで挙げろ。">
-<meta name="twitter:image" content="https://tom3games.github.io/dentist-hand/og.png?v=1">
+<meta name="twitter:image" content="https://tom3games.github.io/dentist-hand/og.png?v=2">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M14 10c8-4 14 2 18 2s10-6 18-2c8 5 6 18 2 26-3 6-4 20-9 20-5 0-4-14-11-14s-6 14-11 14c-5 0-6-14-9-20-4-8-6-21 2-26z' fill='%23fbfaf6' stroke='%23234' stroke-width='4'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -43,7 +43,7 @@ button{font-family:inherit;color:inherit;background:none;border:0;cursor:pointer
 #loadBar i{display:block;height:100%;width:0;background:var(--mint);transition:width .2s}
 
 /* ---------- 共通の背景: 天井 ---------- */
-.ceil{position:absolute;left:50%;top:50%;width:max(100vw,66.7svh);aspect-ratio:2/3;transform:translate(-50%,-50%);background:#e9e4da url(img/bg.webp?v=1) center/cover no-repeat}
+.ceil{position:absolute;left:50%;top:50%;width:max(100vw,66.7svh);aspect-ratio:2/3;transform:translate(-50%,-50%);background:#e9e4da url(img/bg.webp?v=2) center/cover no-repeat}
 
 /* ---------- タイトル: 診察券 ---------- */
 #vTitle{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:max(16px,env(safe-area-inset-top)) 16px max(16px,env(safe-area-inset-bottom))}
@@ -71,7 +71,8 @@ button{font-family:inherit;color:inherit;background:none;border:0;cursor:pointer
 .sheet{width:min(94vw,380px);background:var(--paper);padding:16px 16px 12px;box-shadow:0 10px 26px -14px rgba(0,0,0,.5);transform:rotate(.8deg);position:relative}
 .sheet::before{content:"";position:absolute;top:-10px;left:50%;width:70px;height:20px;margin-left:-35px;background:#9aa4a6;border-radius:3px}
 .sheet h2{font-size:20px;letter-spacing:.3em;text-align:center;padding-bottom:8px;border-bottom:1px solid #b9b2a3}
-.sheet ol{list-style:none;margin-top:6px}
+.sheet ol{list-style:none;margin-top:4px}
+#howMouth{display:block;width:100%;height:auto;margin-top:8px;border:3px solid #2a2f31;border-radius:3px}
 .sheet li{display:grid;grid-template-columns:20px 1fr;gap:2px 8px;padding:7px 0;border-bottom:1px dashed #cfc7b7;align-items:start}
 .sheet li i{grid-row:span 2;width:16px;height:16px;border:1.5px solid var(--ink);margin-top:2px;position:relative}
 .sheet li i::after{content:"";position:absolute;left:3px;top:-3px;width:6px;height:12px;border:solid var(--red);border-width:0 2.5px 2.5px 0;transform:rotate(40deg)}
@@ -97,7 +98,7 @@ button{font-family:inherit;color:inherit;background:none;border:0;cursor:pointer
 .ppl img.on{opacity:1}
 #doc{left:-17%;top:2%;width:86%;aspect-ratio:380/620;transition:transform .35s;-webkit-mask-image:linear-gradient(to bottom,#000 60%,transparent 90%);mask-image:linear-gradient(to bottom,#000 60%,transparent 90%)}
 #doc.look{transform:scale(1.07) translateY(2%)}
-#asst{right:-19%;top:13%;width:64%;aspect-ratio:380/620;-webkit-mask-image:linear-gradient(to bottom,#000 58%,transparent 88%);mask-image:linear-gradient(to bottom,#000 58%,transparent 88%)}
+#asst{right:-19%;top:22%;width:64%;aspect-ratio:380/620;-webkit-mask-image:linear-gradient(to bottom,#000 58%,transparent 88%);mask-image:linear-gradient(to bottom,#000 58%,transparent 88%)}
 #bib{position:absolute;left:-8%;right:-8%;bottom:-4%;height:30%;pointer-events:none;background:radial-gradient(120% 90% at 50% 100%,#8fb7c9 0,#a9cad8 45%,rgba(190,214,224,.0) 78%);filter:blur(5px)}
 #asst img{transform:scaleX(-1)}
 #drill{position:absolute;left:14%;top:57%;width:30%;transform-origin:50% 50%;pointer-events:none;opacity:0;transition:opacity .25s;filter:blur(.6px) drop-shadow(0 8px 10px rgba(0,0,0,.25))}
@@ -128,10 +129,11 @@ button{font-family:inherit;color:inherit;background:none;border:0;cursor:pointer
 #say.hum{font-style:italic;font-weight:400;color:#38505a;background:rgba(255,255,255,.8)}
 #say small{display:block;font-size:10px;color:#8a7d5a;font-weight:400}
 #zz{position:absolute;left:40%;top:62%;font-weight:700;color:#22272b;text-shadow:0 0 3px #fff,0 0 3px #fff,0 0 6px #fff;pointer-events:none;z-index:3;transform-origin:left center;white-space:nowrap;font-size:16px;opacity:0}
-#mon{position:absolute;right:3%;top:max(10px,env(safe-area-inset-top));width:118px;z-index:4;pointer-events:none}
+#mon{position:absolute;right:2.5%;top:max(8px,env(safe-area-inset-top));width:64%;z-index:4;pointer-events:none}
+#monC{display:block;width:100%;aspect-ratio:2/1.05}
+#mon.alert .scr{border-color:#e0b43a;box-shadow:0 0 0 2px rgba(224,180,58,.5),0 6px 10px -6px rgba(0,0,0,.6)}
 #mon .rod{width:6px;height:12px;margin:0 auto;background:linear-gradient(90deg,#8c9294,#d4d8d9,#8c9294)}
-#mon .scr{background:#0f1416;border:3px solid #2a2f31;border-radius:3px;padding:5px 8px;color:#9fe3cf;font:700 13px/1.25 ui-monospace,Menlo,monospace;transform:perspective(300px) rotateX(16deg);box-shadow:0 6px 10px -6px rgba(0,0,0,.6)}
-#mon .scr small{display:block;font-size:10px;color:#6aa595;font-weight:400}
+#mon .scr{background:#0f1416;border:4px solid #2a2f31;border-radius:4px;padding:2px;transform:perspective(500px) rotateX(10deg);box-shadow:0 6px 10px -6px rgba(0,0,0,.6);transition:border-color .15s}
 #bMute{position:absolute;left:3%;top:max(10px,env(safe-area-inset-top));width:44px;height:44px;border-radius:50%;z-index:6;background:radial-gradient(circle,#f3f1ec 0 30%,transparent 31%),repeating-radial-gradient(circle,#cfcac0 0 2px,#e9e5dc 2px 5px);box-shadow:inset 0 0 0 2px #bdb6a8;font-size:12px;font-weight:700;color:#38505a}
 #bMute.off{color:var(--red)}
 #tut{position:absolute;inset:0;z-index:8;background:rgba(20,24,26,.45);display:flex;align-items:center;justify-content:center;padding:16px}
@@ -153,7 +155,7 @@ button{font-family:inherit;color:inherit;background:none;border:0;cursor:pointer
 #rMsg{position:absolute;left:50%;top:40%;transform:translateX(-50%);background:rgba(34,39,43,.9);color:#fff;padding:8px 14px;border-radius:6px;font-size:14px;pointer-events:none}
 @media (max-height:700px){
   .card{padding:12px 14px 14px}.card h1{font-size:28px}#bStart{margin-top:4svh;height:52px}.small{margin-top:2svh}
-  .sheet li{padding:5px 0}.sheet li span{font-size:15.5px}.sheet .who{margin-top:5px}.howBtns{margin-top:8px}
+  .sheet li{padding:4px 0}#howMouth{width:auto;height:58px;margin:6px auto 0}.sheet .who img{width:34px;height:34px}.sheet h2{font-size:18px;padding-bottom:5px}.sheet li span{font-size:15.5px}.sheet .who{margin-top:5px}.howBtns{margin-top:8px}
   #bAgain{height:44px}#rBtns .s{min-height:38px}
   .say{font-size:15px}
 }
@@ -187,8 +189,9 @@ button{font-family:inherit;color:inherit;background:none;border:0;cursor:pointer
 <main id="vHow" class="view" hidden>
   <div class="sheet">
     <h2 data-t="howTitle"></h2>
+    <canvas id="howMouth" width="560" height="150"></canvas>
     <ol id="howList"></ol>
-    <div class="who"><img src="img/dentist_look.webp?v=1" alt=""><img src="img/assistant_look.webp?v=1" alt=""><img src="img/director_look.webp?v=1" alt=""><small id="howWho"></small></div>
+    <div class="who"><img src="img/dentist_look.webp?v=2" alt=""><img src="img/assistant_look.webp?v=2" alt=""><img src="img/director_look.webp?v=2" alt=""><small id="howWho"></small></div>
   </div>
   <div class="howBtns"><button id="bHowBack" data-t="back"></button><button id="bHowGo" data-t="howGo"></button></div>
   <div class="foot"><span data-t="credit"></span><br><a href="privacy.html" target="_blank" rel="noopener" data-t="privacy"></a></div>
@@ -199,17 +202,17 @@ button{font-family:inherit;color:inherit;background:none;border:0;cursor:pointer
     <div class="ceil" id="ceilP"></div>
     <div class="lamp"></div>
     <div class="ppl" id="doc"><img data-k="down"><img data-k="look"><img data-k="away"></div>
-    <div class="ppl" id="asst"><img data-k="look" src="img/assistant_look.webp?v=1"><img data-k="glare" src="img/assistant_glare.webp?v=1"><img data-k="away" src="img/assistant_away.webp?v=1"></div>
-    <div id="drill"><img src="img/drill.webp?v=1" alt=""></div>
+    <div class="ppl" id="asst"><img data-k="look" src="img/assistant_look.webp?v=2"><img data-k="glare" src="img/assistant_glare.webp?v=2"><img data-k="away" src="img/assistant_away.webp?v=2"></div>
+    <div id="drill"><img src="img/drill.webp?v=2" alt=""></div>
     <div id="bib"></div>
-    <div id="feet"><img data-k="rest" src="img/feet_rest.webp?v=1" class="on"><img data-k="curl" src="img/feet_curl.webp?v=1"></div>
+    <div id="feet"><img data-k="rest" src="img/feet_rest.webp?v=2" class="on"><img data-k="curl" src="img/feet_curl.webp?v=2"></div>
     <div id="glow"></div>
     <div id="vig"></div>
   </div>
-  <div id="hand"><img data-k="rest" src="img/hand_rest.webp?v=1" class="on"><img data-k="fist" src="img/hand_fist.webp?v=1"><img data-k="up" src="img/hand_up.webp?v=1"></div>
+  <div id="hand"><img data-k="rest" src="img/hand_rest.webp?v=2" class="on"><img data-k="fist" src="img/hand_fist.webp?v=2"><img data-k="up" src="img/hand_up.webp?v=2"></div>
   <div id="zz"></div>
   <div id="say" class="say" hidden></div>
-  <div id="mon"><div class="rod"></div><div class="scr"><small id="monL"></small><span id="monT">2:00</span></div></div>
+  <div id="mon"><div class="rod"></div><div class="scr"><canvas id="monC"></canvas></div></div>
   <button id="bMute" aria-label="sound"></button>
   <button id="bHand" aria-label="raise hand"></button>
   <div id="hint" hidden></div>
@@ -247,10 +250,10 @@ button{font-family:inherit;color:inherit;background:none;border:0;cursor:pointer
   },6000);
 })();
 </script>
-<script src="tm.js?v=1" data-game="dentist-hand"></script>
-<script src="sfx.js?v=1"></script>
-<script src="data.js?v=1"></script>
-<script src="game.js?v=1"></script>
-<script src="support.js?v=1" data-ja="歯ブラシ" data-en="a toothbrush"></script>
+<script src="tm.js?v=2" data-game="dentist-hand"></script>
+<script src="sfx.js?v=2"></script>
+<script src="data.js?v=2"></script>
+<script src="game.js?v=2"></script>
+<script src="support.js?v=2" data-ja="歯ブラシ" data-en="a toothbrush"></script>
 </body>
 </html>

@@ -28,3 +28,6 @@
 
 ## 音（CC BY の表示）
 - ドリルの音: "WWS Dentaldrill" Work With Sounds / La Fonderie, CC BY 4.0（https://commons.wikimedia.org/wiki/File:WWS_Dentaldrill.ogg）。8〜16秒を切り出してループにした。遊び方の画面にも表示
+- snd/gari1.mp3: 75 CC0 breaking / falling / hit sfx / rubberduck / CC0
+- snd/gari2.mp3: 75 CC0 breaking / falling / hit sfx / rubberduck / CC0
+- snd/fixed.mp3: Interface Sounds / Kenney / CC0

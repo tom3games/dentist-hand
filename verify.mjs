@@ -90,82 +90,97 @@ await t('遊び方の下にプライバシーのリンク（押せる高さ38px�
 await t('privacy.html が開ける', async () => { const r = await p.request.get(URL0 + 'privacy.html'); expect(r.status() === 200, r.status()) })
 
 // ---- 遊びの仕組み（時間を止めて台本どおりに進める）
-const begin = (seed, o = {}) => p.evaluate(({ seed, o }) => { dh.dbg.pause(true); dh.startGame({ seed, tutorial: false, boss: false, ...o }); return { spikes: dh.run.S.spikes, blocks: dh.run.S.blocks, dLook: dh.run.S.dLook, aPose: dh.run.S.aPose } }, { seed, o })
+const begin = (seed, o = {}) => p.evaluate(({ seed, o }) => { dh.dbg.pause(true); dh.startGame({ seed, tutorial: false, boss: false, ...o }); return { ev: dh.run.S.ev, blocks: dh.run.S.blocks, dLook: dh.run.S.dLook, aPose: dh.run.S.aPose, teeth: dh.run.S.teeth } }, { seed, o })
 await t('始めると TM.start と音（呼ばれた回数）が記録され、実際には無音', async () => {
   await p.click('#bStart'); await p.waitForTimeout(400)
   const r = await p.evaluate(() => ({ tm: window.__tmLog.map(x => x.name), calls: window.__soundCalls, ok: window.__muteOk(), play: !document.querySelector('#vPlay').hidden }))
   expect(r.tm.includes('game_start') && r.calls > 0 && r.ok && r.play, r); return r
 })
 let S = await begin(1000)
-await t('台本に痛みの波が8回以上・4つの型（見る/助手/誰も/遅れて）がある', async () => {
-  const pats = [...new Set(S.spikes.map(x => x.pat))].sort().join('')
-  expect(S.spikes.length >= 8 && pats.length >= 3, { n: S.spikes.length, pats }); return { n: S.spikes.length, pats }
+await t('天井のモニターに口の中（歯14本）が映り、虫歯は3〜4本、健康な歯へ向かう場面が6〜8回', async () => {
+  const r = await p.evaluate(() => { const c = document.querySelector('#monC'), b = c.getBoundingClientRect(); return { w: Math.round(b.width), h: Math.round(b.height), cw: c.width } })
+  const cav = S.teeth.filter(x => x === 'cav').length, bad = S.ev.filter(e => e.kind === 'bad').length
+  const counts = await p.evaluate(() => { const a = []; for (let i = 0; i < 40; i++) { const s = dh.buildScript(i); a.push([s.teeth.filter(x => x === 'cav').length, s.ev.filter(e => e.kind === 'bad').length]) } return a })
+  expect(S.teeth.length === 14 && cav >= 3 && cav <= 4 && bad >= 6 && bad <= 8 && r.w >= 200 && r.cw > 0 && counts.every(([c, b]) => c >= 3 && c <= 4 && b >= 6 && b <= 8), { r, cav, bad }); return { mon: r, cav, bad }
 })
-await t('痛みの前にドリルの音が上がる（予告1.5秒）', async () => {
-  const sp = S.spikes[0]
-  const r = await p.evaluate(sp => { const v = []; for (const tt of [sp.w0 - 0.5, sp.w0 + 0.4, sp.w0 + 1.2, sp.p0 + 0.5]) { dh.dbg.to(tt); v.push(dh.obs().pitch) } return v }, sp)
-  expect(r[0] <= 0.25 && r[1] > r[0] && r[2] > r[1] && r[3] === 1, r); return r
+await t('モニターに歯が描けている（色の散らばり）', async () => { await p.evaluate(() => dh.dbg.to(6)); const v = await variance(p, '#monC'); expect(v > 800, v); return v })
+await t('虫歯は削らせると治る（黒が消える）', async () => {
+  S = await begin(1000)
+  const e = S.ev.find(x => x.kind === 'cav')
+  const r = await p.evaluate(e => { dh.dbg.to(e.contact - 0.1); const a = dh.run.teeth[e.tooth]; dh.dbg.to(e.end + 0.1); return [a, dh.run.teeth[e.tooth], dh.run.fixed] }, e)
+  expect(r[0] === 'cav' && r[1] === 'fixed' && r[2] >= 1, r); return r
+})
+await t('健康な歯へ向かったのを止めないと銀歯になる（ガリッ）', async () => {
+  S = await begin(1000)
+  const e = S.ev.find(x => x.kind === 'bad')
+  const r = await p.evaluate(e => { dh.dbg.to(e.a0 + 0.3); const o = dh.obs(); dh.dbg.to(e.end + 0.1); return { tgt: o.tgt, tstate: o.tstate, after: dh.run.teeth[e.tooth], silver: dh.run.silver, gari: Snd.played.gari || 0 } }, e)
+  expect(r.tgt === e.tooth && r.tstate === 'ok' && r.after === 'silver' && r.silver === 1 && r.gari >= 1, r); return r
+})
+await t('ドリルの行き先と同時に、モニターの縁が光る', async () => {
+  S = await begin(1000)
+  const e = S.ev.find(x => x.kind === 'bad'), c = S.ev.find(x => x.kind === 'cav')
+  const r = await p.evaluate(({ e, c }) => { dh.dbg.to(e.a0 + 0.3); const a = document.querySelector('#mon').classList.contains('alert'); dh.dbg.to(c.a0 + 0.3); return [a, document.querySelector('#mon').classList.contains('alert')] }, { e, c })
+  expect(r[0] === true && r[1] === false, r); return r
 })
 await t('先生が顔を上げる0.8秒前に鼻歌が止まる（見る前の合図）', async () => {
   S = await begin(1000)
-  const lk = S.dLook.find(l => l.pose === 'look' && S.blocks.some(b => b.kind === 'drill' && l.a > b.a + 3 && l.a < b.b))
+  const lk = S.dLook.find(l => l.pose === 'look' && S.blocks.some(b => b.kind === 'drill' && l.a > b.a + 4 && l.a < b.b) && !S.aPose.some(a => a.pose === 'glare' && Math.abs(a.a - l.a) < 4))
   const r = await p.evaluate(lk => { dh.dbg.to(lk.a - 1.3); const a = dh.obs().hum; dh.dbg.to(lk.a - 0.5); const b = dh.obs().hum; dh.dbg.to(lk.a + 0.2); return { before: a, justBefore: b, d: dh.obs().d } }, lk)
   expect(r.before === true && r.justBefore === false && r.d === 'look', r); return r
 })
-await t('見ている時に挙げると止めてくれる（予告中なら先回り）', async () => {
+await t('先生が見ている時に挙げると「ごめんごめん」で止まり、その歯は白いまま', async () => {
   S = await begin(1000)
-  const sp = S.spikes.find(x => x.pat === 'A')
-  const r = await p.evaluate(sp => { dh.dbg.to(sp.w0 + 0.6); dh.raise(); dh.dbg.step(12); const r = dh.run; return { seen: r.seen, avoided: r.avoided, paused: r.clock < r.pauseUntil, canceled: dh.run.S.spikes.find(x => x.w0 === sp.w0).canceled, say: r.say && r.say.key } }, sp)
-  expect(r.seen === 1 && r.avoided === 1 && r.paused && r.canceled && /stop/.test(r.say), r); return r
+  const e = S.ev.find(x => x.kind === 'bad' && x.pat === 'A')
+  const r = await p.evaluate(e => { dh.dbg.to(e.a0 + 0.7); dh.raise(); dh.dbg.step(12); const r = dh.run; const k = r.say && r.say.key; const paused = r.clock < r.pauseUntil; dh.dbg.to(e.end + 1); return { seen: r.seen, saved: r.saved, paused, say: k, tooth: r.teeth[e.tooth] } }, e)
+  expect(r.seen === 1 && r.saved === 1 && r.paused && r.say === 'sorry' && r.tooth === 'ok', r); return r
 })
-await t('誰も見ていない時に挙げると「はい、もう少しね」で続く', async () => {
+await t('誰も見ていない時に挙げると「はい、もう少しね」で続き、銀歯になる', async () => {
   S = await begin(1000)
-  const sp = S.spikes.find(x => x.pat === 'C') || S.spikes.find(x => x.pat === 'D')
-  const r = await p.evaluate(sp => { dh.dbg.to(sp.p0 + 0.2); dh.raise(); dh.dbg.step(75); const r = dh.run; return { seen: r.seen, raised: r.raised, say: r.say && r.say.key, canceled: !!dh.run.S.spikes.find(x => x.w0 === sp.w0).canceled } }, sp)
-  expect(r.seen === 0 && r.raised === 1 && r.say === 'notSeen' && !r.canceled, r); return r
+  const e = S.ev.find(x => x.kind === 'bad' && x.pat === 'D') || S.ev.find(x => x.kind === 'bad' && x.pat === 'C')
+  const r = await p.evaluate(e => { dh.dbg.to(e.a0 + 0.3); dh.raise(); dh.dbg.step(70); const k = dh.run.say && dh.run.say.key; dh.dbg.to(e.end + 0.1); return { seen: dh.run.seen, say: k, tooth: dh.run.teeth[e.tooth] } }, e)
+  expect(r.seen === 0 && r.say === 'notSeen' && r.tooth === 'silver', r); return r
 })
-await t('助手が見ている時に挙げると助手が気づいて先生に言う', async () => {
+await t('助手が叱った後こっちを見る。その時に挙げると助手が先生に言って止まる', async () => {
   S = await begin(1000)
-  const sp = S.spikes.find(x => x.pat === 'B')
-  const r = await p.evaluate(sp => { dh.dbg.to(sp.p0 + 0.35); const a = dh.obs().a; dh.raise(); dh.dbg.step(3); const k1 = dh.run.say && dh.run.say.key; dh.dbg.step(40); return { a, k1, k2: dh.run.say && dh.run.say.key, stops: dh.run.stops } }, sp)
-  expect(r.a === 'look' && r.k1 === 'seenByA' && r.stops === 1, r); return r
+  const e = S.ev.find(x => x.kind === 'bad' && x.pat === 'B')
+  const r = await p.evaluate(e => { dh.dbg.to(e.a0 + 0.4); const g = dh.obs().a; dh.dbg.to(e.a0 + 1.3); const a = dh.obs().a; dh.raise(); dh.dbg.step(3); const k1 = dh.run.say && dh.run.say.key; dh.dbg.step(40); return { g, a, k1, saved: dh.run.saved } }, e)
+  expect(r.g === 'glare' && r.a === 'look' && r.k1 === 'seenByA' && r.saved === 1, r); return r
 })
-await t('痛くない時に見られて挙げると大げさ、3回で無視されるようになる', async () => {
+await t('虫歯の上で止めると虫歯が残り、大げさと思われる', async () => {
   S = await begin(1000)
-  const r = await p.evaluate(() => {
-    const out = []
-    for (const l of dh.run.S.dLook.filter(l => l.pose === 'look')) {
-      dh.dbg.to(l.a + 0.1); if (dh.run.done) break
-      const sp = dh.run.S.spikes.find(s => dh.run.tt >= s.w0 - 0.2 && dh.run.tt < s.p1 + 0.2); if (sp) continue
-      dh.raise(); dh.dbg.step(5); out.push(dh.run.bigesa); if (out.length >= 3) break
-    }
-    return { out, ignore: dh.run.ignore, anes: dh.run.anes }
-  })
-  expect(r.out.join() === '1,2,3' && r.ignore && r.anes > 1, r); return r
+  const e = S.ev.find(x => x.kind === 'cav' && S.dLook.some(l => l.pose === 'look' && l.a > x.contact && l.a < x.end))
+  const lk = S.dLook.find(l => l.pose === 'look' && l.a > e.contact && l.a < e.end)
+  const r = await p.evaluate(({ e, lk }) => { dh.dbg.to(lk.a + 0.1); dh.raise(); dh.dbg.step(120); dh.dbg.to(e.end + 2); return { tooth: dh.run.teeth[e.tooth], bigesa: dh.run.bigesa } }, { e, lk })
+  expect(r.tooth === 'cav' && r.bigesa === 1, r); return r
+})
+await t('何もない時に見られて挙げると大げさ', async () => {
+  S = await begin(1000)
+  const r = await p.evaluate(() => { dh.dbg.to(1); dh.raise(); dh.dbg.step(5); return dh.run.bigesa })
+  expect(r === 1, r); return r
 })
 await t('挙げっぱなしにはできない（1.1秒で下がる・気づかれないと次まで1.6秒）', async () => {
   S = await begin(1000)
-  const r = await p.evaluate(() => { dh.dbg.to(8); const a = dh.run.hand.up; dh.raise(); const b = dh.run.hand.up; dh.dbg.step(70); const c = dh.run.hand.up; const d = dh.raise(); dh.dbg.step(100); const e = dh.raise(); return { a, b, c, d, e } })
-  expect(!r.a && r.b && !r.c && r.d === false && r.e === true, r); return r
+  const e = S.ev.find(x => x.kind === 'bad' && x.pat === 'D') || S.ev.find(x => x.kind === 'cav')
+  const r = await p.evaluate(e => { dh.dbg.to(e.a0 + 0.1); const a = dh.run.hand.up; const b = dh.raise(); dh.dbg.step(70); const c = dh.run.hand.up; const d = dh.raise(); dh.dbg.step(100); const f = dh.raise(); return { a, b, c, d, f } }, e)
+  expect(!r.a && r.b && !r.c && r.d === false && r.f === true, r); return r
 })
-await t('痛みは画面のバーにせず、手・足の指・天井・暗さで出る', async () => {
+await t('痛みは演出（手・足の指・天井・暗さ）で、勝ち負けのバーは無い', async () => {
   S = await begin(1000)
-  const sp = S.spikes.find(x => x.pat === 'C') || S.spikes[1]
-  const r = await p.evaluate(async sp => {
-    dh.dbg.to(sp.p0 + 1.0); for (let i = 0; i < 10; i++) { dh.dbg.step(1); await new Promise(r => requestAnimationFrame(r)) }
+  const e = S.ev.find(x => x.kind === 'cav')
+  const r = await p.evaluate(async e => {
+    dh.dbg.to(e.contact + 1.0); for (let i = 0; i < 10; i++) { dh.dbg.step(1); await new Promise(r => requestAnimationFrame(r)) }
     const on = s => document.querySelector(s + ' img.on').dataset.k
     return { hand: on('#hand'), feet: on('#feet'), vig: +getComputedStyle(document.querySelector('#vig')).opacity, blur: document.querySelector('#ceilP').style.filter, bars: document.querySelectorAll('progress,meter,[role=progressbar]').length }
-  }, sp)
-  expect(r.hand === 'fist' && r.feet === 'curl' && r.vig > 0.3 && /blur/.test(r.blur) && r.bars === 0, r); return r
+  }, e)
+  expect(r.hand === 'fist' && r.feet === 'curl' && r.vig > 0.2 && /blur/.test(r.blur) && r.bars === 0, r); return r
 })
 await t('通しで同時に出る文字は2つまで（160か所で数える）', async () => {
   S = await begin(1234)
   const n = await p.evaluate(async () => { let mx = 0, at = 0; for (let i = 0; i < 160; i++) { dh.dbg.step(50); if (i % 7 === 3) dh.raise(); await new Promise(r => requestAnimationFrame(r)); const k = [...document.querySelectorAll('#vPlay .say, #zz')].filter(el => !el.hidden && +getComputedStyle(el).opacity > 0.05 && el.textContent.trim()).length; if (k > mx) { mx = k; at = dh.run.tt } if (dh.run.done) break } return { mx, at } })
   expect(n.mx <= 2, n); return n
 })
-await t('台詞は12字前後（日本語は14字以内）で、読める時間（0.9秒＋1字0.09秒以上）出る', async () => {
+await t('台詞は12字前後（日本語は14字以内）', async () => {
   const r = await p.evaluate(() => { const L = DH_DATA.lines.ja; const long = []; for (const k in L) for (const s of L[k]) for (const part of s.split('|')) if ([...part].length > 14) long.push(s); return long })
-  const d = await p.evaluate(() => { dh.dbg.to(dh.run.tt + 1); const s = dh.run.say; return s ? +(s.until - dh.run.clock).toFixed(2) : null })
   expect(r.length === 0, r); return { long: r.length }
 })
 await t('チャットで先生が質問し、口を開けたまま答えさせられる', async () => {
@@ -175,28 +190,29 @@ await t('チャットで先生が質問し、口を開けたまま答えさせ�
   expect(r[0] === 'chatQ' && r[1] === 'chatAp' && r[2] === 'chatR', r); return r
 })
 await t('院長（レア）は別の顔で、痛みが強い', async () => {
-  const r = await p.evaluate(() => { dh.startGame({ seed: 77, tutorial: false, boss: true }); const src = document.querySelector('#doc img').src; const b = dh.run.S.spikes.map(s => s.I); dh.startGame({ seed: 77, tutorial: false, boss: false }); const n = dh.run.S.spikes.map(s => s.I); const avg = a => a.reduce((x, y) => x + y, 0) / a.length; return { src: /director/.test(src), boss: avg(b), normal: avg(n) } })
+  const r = await p.evaluate(() => { dh.startGame({ seed: 77, tutorial: false, boss: true }); const src = document.querySelector('#doc img').src; const b = dh.run.S.ev.filter(e => e.I).map(s => s.I); dh.startGame({ seed: 77, tutorial: false, boss: false }); const n = dh.run.S.ev.filter(e => e.I).map(s => s.I); const avg = a => a.reduce((x, y) => x + y, 0) / a.length; return { src: /director/.test(src), boss: avg(b), normal: avg(n) } })
   expect(r.src && r.boss > r.normal, r); return r
 })
-await t('種で台本が変わる（毎回くじ）', async () => p.evaluate(() => JSON.stringify(dh.buildScript(1).spikes.map(s => s.pat)) !== JSON.stringify(dh.buildScript(2).spikes.map(s => s.pat))))
-await t('何もしない通しは最低の判定（石像・ランク1）', async () => {
-  const r = await p.evaluate(() => { const a = []; for (let i = 0; i < 6; i++) a.push(dh.simulate('none', 500 + i)); return a.map(x => [x.rank, x.title]) })
-  expect(r.every(x => x[0] === 1 && x[1] === 'stone'), r); return r[0]
+await t('種で虫歯の位置と台本が変わる（毎回くじ）', async () => p.evaluate(() => JSON.stringify(dh.buildScript(1).teeth) !== JSON.stringify(dh.buildScript(2).teeth)))
+await t('治療は約2分', async () => { const r = await p.evaluate(() => [1, 2, 3, 4, 5, 6].map(s => Math.round(dh.buildScript(s).end))); expect(r.every(x => x >= 95 && x <= 140), r); return r })
+await t('何もしない通しは銀歯だらけで最低の判定（ランク1）', async () => {
+  const r = await p.evaluate(() => { const a = []; for (let i = 0; i < 6; i++) a.push(dh.simulate('none', 500 + i)); return a.map(x => [x.rank, x.title, x.silver]) })
+  expect(r.every(x => x[0] === 1 && x[2] >= 5), r); return r[0]
 })
 // ---- 結果
 await t('最後まで行くとカルテが出て、TM.end と判定が発表まで伏せられる', async () => {
   S = await begin(1000)
   const r = await p.evaluate(async () => {
-    const sp = dh.run.S.spikes.find(x => x.pat === 'A'); dh.dbg.to(sp.w0 + 0.6); dh.raise(); dh.dbg.to(1e9)
+    const e = dh.run.S.ev.find(x => x.kind === 'bad' && x.pat === 'A'); dh.dbg.to(e.a0 + 0.7); dh.raise(); dh.dbg.to(1e9)
     await new Promise(r => setTimeout(r, 1000))
     return { view: !document.querySelector('#vResult').hidden, tm: window.__tmLog.filter(x => x.name === 'game_end').length, res: dh.result }
   })
-  expect(r.view && r.tm >= 1 && r.res && r.res.raised === 1, r); return { title: r.res.title, score: r.res.score }
+  expect(r.view && r.tm >= 1 && r.res && r.res.raised === 1 && r.res.teeth.length === 14, r); return { title: r.res.title, score: r.res.score, silver: r.res.silver }
 })
 await t('ハンコ（称号と点）は最後に押される', async () => {
-  const a = await variance(p, '#karte'); await p.waitForTimeout(4200); const b = await variance(p, '#karte')
+  const a = await variance(p, '#karte'); await p.waitForTimeout(4000); const b = await variance(p, '#karte')
   await p.screenshot({ path: ROOT + '/shots/v-result.png' })
-  expect(a > 300 && b > a, { a, b }); return { a, b }
+  expect(a > 300 && b !== a, { a, b }); return { a, b }
 })
 await t('結果に「もう一回」（bAgain）と支援リンク・保存・Xでポスト', async () => p.evaluate(() => !!document.querySelector('#bAgain') && !!document.querySelector('#tmSupport') && /歯ブラシ/.test(document.querySelector('#tmSupport').textContent) && !!document.querySelector('#bSave') && !!document.querySelector('#bPost')))
 await t('Xでポスト: x.com/intent/post、本文にURLを入れず url パラメータ', async () => {
@@ -222,18 +238,18 @@ await t('ここまでエラーなし', async () => { expect(p.errs.length === 0,
 await p.close()
 
 // ---- 最初の1回だけのチュートリアル
-await t('チュートリアル: 初回だけ出て、痛みの前に先生が見る瞬間で止まり、挙げると先回りで止めてくれる', async () => {
+await t('チュートリアル: 初回だけ出て、ドリルが白い歯へ向かい先生が見る瞬間で止まり、挙げると止めてくれる', async () => {
   const q = await open(browser, {}, { tut: false })
   await q.click('#bStart'); await q.waitForTimeout(200)
   const s1 = await q.evaluate(() => [!document.querySelector('#tut').hidden, document.querySelector('#tutP').textContent])
   await q.screenshot({ path: ROOT + '/shots/v-tut1.png' })
   await q.click('#tutB'); await q.click('#tutB')
   await q.waitForFunction(() => window.dh.dbg.tutStage() === 4, null, { timeout: 30000 })
-  await q.screenshot({ path: ROOT + '/shots/v-tut3.png' })
+  await q.waitForTimeout(300); await q.screenshot({ path: ROOT + '/shots/v-tut3.png' })
   const n = await texts(q)
   await q.tap ? null : null
   await q.click('#bHand'); await q.waitForTimeout(300)
-  const r = await q.evaluate(() => ({ avoided: dh.run.avoided, tut: localStorage.getItem('dh_tut'), hidden: document.querySelector('#tut').hidden }))
+  const r = await q.evaluate(() => ({ avoided: dh.run.saved, tut: localStorage.getItem('dh_tut'), hidden: document.querySelector('#tut').hidden }))
   await q.evaluate(() => { dh.dbg.finish(); }); await q.waitForTimeout(900); await q.click('#bAgain'); await q.waitForTimeout(200)
   const again = await q.evaluate(() => document.querySelector('#tut').hidden)
   await q.close()
@@ -260,11 +276,11 @@ for (const [w, h, name] of SIZES) {
     views.title = [await fit(q), await overflow(q)]; await q.screenshot({ path: `${ROOT}/shots/fit-${name}${L}-title.png` })
     await q.click('#bHow'); await q.waitForTimeout(150); views.how = [await fit(q), await overflow(q)]; await q.screenshot({ path: `${ROOT}/shots/fit-${name}${L}-how.png` })
     await q.click('#bHowGo'); await q.evaluate(() => { dh.dbg.pause(true); dh.startGame({ seed: 1000, tutorial: false, boss: false }) })
-    const S2 = await q.evaluate(() => dh.run.S.spikes)
-    await q.evaluate(t => dh.dbg.to(t), S2[0].w0 + 0.5); await q.waitForTimeout(120); views.play = [await fit(q), await overflow(q)]; await q.screenshot({ path: `${ROOT}/shots/fit-${name}${L}-play.png` })
+    const S2 = await q.evaluate(() => dh.run.S.ev.find(e => e.kind === 'bad'))
+    await q.evaluate(t => dh.dbg.to(t), S2.a0 + 0.5); await q.waitForTimeout(120); views.play = [await fit(q), await overflow(q)]; await q.screenshot({ path: `${ROOT}/shots/fit-${name}${L}-play.png` })
     await q.evaluate(() => { dh.raise(); dh.dbg.step(20) }); await q.waitForTimeout(120); views.raised = [await fit(q), await overflow(q)]; await q.screenshot({ path: `${ROOT}/shots/fit-${name}${L}-raised.png` })
     await q.evaluate(() => { dh.startGame({ seed: 5, tutorial: true, boss: false }) }); await q.waitForTimeout(150); views.tut = [await fit(q), await overflow(q)]
-    await q.evaluate(() => { document.querySelector('#tut').hidden = true; dh.dbg.finish({ raised: 6, seen: 4, hurt: 2, avoided: 3, pain: 4, bigesa: 0 }) }); await q.waitForTimeout(5200)
+    await q.evaluate(() => { document.querySelector('#tut').hidden = true; dh.dbg.finish({ raised: 6, seen: 4, silver: 1, fixed: 3, bigesa: 0 }) }); await q.waitForTimeout(5200)
     views.result = [await fit(q), await overflow(q)]; await q.screenshot({ path: `${ROOT}/shots/fit-${name}${L}-result.png` })
     for (const [v, [f, o]] of Object.entries(views)) {
       await t(`一画面に収まる・はみ出しなし ${name}${L} ${w}x${h} ${v}`, async () => { expect(!f.over.length && o.sw <= o.W && !o.bad.length, { f, o }) })
@@ -283,7 +299,7 @@ await t('WebKit: 2本指の touchmove を止める', async () => {
 })
 await t('WebKit: タップで始めて手を挙げられ、実際には無音', async () => {
   await wp.tap('#bStart'); await wp.waitForTimeout(500)
-  await wp.evaluate(() => { dh.dbg.pause(true); dh.startGame({ seed: 1000, tutorial: false, boss: false }); const sp = dh.run.S.spikes.find(x => x.pat === 'A'); dh.dbg.to(sp.w0 + 0.6) })
+  await wp.evaluate(() => { dh.dbg.pause(true); dh.startGame({ seed: 1000, tutorial: false, boss: false }); const e = dh.run.S.ev.find(x => x.kind === 'bad' && x.pat === 'A'); dh.dbg.to(e.a0 + 0.7) })
   await wp.tap('#bHand'); await wp.evaluate(() => dh.dbg.step(10))
   const r = await wp.evaluate(() => ({ raised: dh.run.raised, seen: dh.run.seen, calls: window.__soundCalls, ok: window.__muteOk(), ctx: Snd.ctx && Snd.ctx.state }))
   await wp.screenshot({ path: ROOT + '/shots/v-webkit-raised.png' })

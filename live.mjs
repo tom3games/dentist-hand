@@ -23,21 +23,21 @@ for (const [name, bt, opts] of [['chromium', chromium, {}], ['webkit', webkit, {
   const ready = ((Date.now() - t0) / 1000).toFixed(1)
   const ver = await p.evaluate(() => [...document.scripts].map(s => s.getAttribute('src')).filter(Boolean).find(s => /^game\.js/.test(s)))
   if (process.env.V && !ver.endsWith('?v=' + process.env.V)) { out.push(`${name}: まだ古い版 ${ver}`); bad++ }
-  // ---- 遊びの通し: タイトル → 受付する → 先生が見ている時に手を挙げる → 最後まで → カルテ
+  // ---- 遊びの通し: タイトル → 受付する → ドリルが白い歯へ向かい先生が見ている時に手を挙げる（止まる）→ 最後まで → カルテ（口の中の写真）
   const tap = s => name === 'webkit' ? p.tap(s) : p.click(s)
   await tap('#bStart'); await p.waitForTimeout(400)
   const muteOk = await p.evaluate(() => window.__muteOk())
-  await p.evaluate(() => { dh.dbg.pause(true); dh.startGame({ seed: 1000, tutorial: false, boss: false }); const sp = dh.run.S.spikes.find(x => x.pat === 'A'); dh.dbg.to(sp.w0 + 0.6) })
+  await p.evaluate(() => { dh.dbg.pause(true); dh.startGame({ seed: 1000, tutorial: false, boss: false }); const e = dh.run.S.ev.find(x => x.kind === 'bad' && x.pat === 'A'); dh.dbg.to(e.a0 + 0.7) })
   await tap('#bHand'); await p.evaluate(() => dh.dbg.step(10))
-  const seen = await p.evaluate(() => [dh.run.raised, dh.run.seen, dh.run.avoided])
+  const seen = await p.evaluate(() => [dh.run.raised, dh.run.seen, dh.run.saved])
   await p.screenshot({ path: `shots/live-${name}-play.png` })
   await p.evaluate(() => dh.dbg.to(1e9)); await p.waitForTimeout(5200)
-  const res = await p.evaluate(() => ({ view: !document.querySelector('#vResult').hidden, title: dh.result && dh.result.title, support: !!document.querySelector('#tmSupport'), post: dh.postUrl() }))
+  const res = await p.evaluate(() => ({ view: !document.querySelector('#vResult').hidden, title: dh.result && dh.result.title, teeth: dh.result && dh.result.teeth.length, support: !!document.querySelector('#tmSupport'), post: dh.postUrl() }))
   await p.screenshot({ path: `shots/live-${name}-result.png` })
   const og = await p.evaluate(async () => { const r = await fetch(document.querySelector('meta[property="og:image"]').content); return r.status + ' ' + r.headers.get('content-type') })
-  const ok = res.view && seen.join() === '1,1,1' && muteOk && /^200 image\/png/.test(og) && !errs.length && res.support
+  const ok = res.view && res.teeth === 14 && seen.join() === '1,1,1' && muteOk && /^200 image\/png/.test(og) && !errs.length && res.support
   if (!ok) bad++
-  out.push(`${name}: ${ok ? 'OK' : 'NG'} ready=${ready}s ver=${ver} raised/seen/avoided=${seen} result=${res.title} support=${res.support} mute=${muteOk} og=${og} errors=${errs.length ? errs.join(' | ') : 'none'}`)
+  out.push(`${name}: ${ok ? 'OK' : 'NG'} ready=${ready}s ver=${ver} raised/seen/saved=${seen} result=${res.title} support=${res.support} mute=${muteOk} og=${og} errors=${errs.length ? errs.join(' | ') : 'none'}`)
   await b.close()
 }
 if (!process.env.SKIPGH) {
