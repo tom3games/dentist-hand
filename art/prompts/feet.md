@@ -1,0 +1,4 @@
+Photorealistic photograph against a perfectly flat, solid pure green (#00FF00) studio background, no shadows on the background. A sheet of exactly three objects side by side in three equal columns, nothing overlapping, generous green space between them. Soft clinical light, sharp focus. No text, no logos, no watermark.
+Left column: a pair of feet in plain dark navy cotton socks, seen from the point of view of a person lying on their back looking down along their own body, toes pointing up, relaxed.
+Middle column: the same pair of feet in the same dark navy socks, same view, toes tightly curled and scrunched, feet tense and twisted inward in pain.
+Right column: a modern dental high-speed drill handpiece (slim stainless steel and white, with a small burr at the angled head), shown diagonally, head pointing toward the upper right.
