@@ -1,0 +1,4 @@
+Photorealistic product photograph against a perfectly flat, solid pure green (#00FF00) studio background, no shadows on the background. A sheet of exactly three objects side by side in three equal columns, each object centered in its column, nothing overlapping, generous green space between them. Soft clean studio light, sharp focus, slight top-down three-quarter angle. Absolutely no text, no letters, no numbers, no logos, no watermark.
+Left column: a brown clipboard holding a formal official paper form with faint grey ruled lines and boxes and one empty red-outlined square at the bottom right, with no legible writing at all.
+Middle column: a coiled grey dental suction hose (saliva ejector) with a white plastic tip, curling in a loop.
+Right column: a modern black smartphone lying face up, dark screen, no logo.

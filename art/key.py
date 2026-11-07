@@ -19,9 +19,10 @@ def cols(im, n=3):
 def save(im,name,maxw,maxh):
     bb=im.getbbox(); im=im.crop(bb); im.thumbnail((maxw,maxh),Image.LANCZOS)
     im.save(OUT+name+'.webp',quality=82,method=6); print(name,im.size,os.path.getsize(OUT+name+'.webp')//1024,'KB')
-for who in ['dentist','director']:
-    for part,pose in zip(cols(key(D+f'/raw/{who}.png')),['down','look','away']): save(part,f'{who}_{pose}',460,620)
-for part,pose in zip(cols(key(D+'/raw/assistant.png')),['look','glare','away']): save(part,f'assistant_{pose}',460,620)
-for part,st in zip(cols(key(D+'/raw/hand.png')),['rest','fist','up']): save(part,f'hand_{st}',360,560)
-for part,st in zip(cols(key(D+'/raw/feet.png')),['feet_rest','feet_curl','drill']): save(part,st,420,420)
-bg=Image.open(D+'/raw/bg.png').convert('RGB'); bg.thumbnail((900,1350)); bg.save(OUT+'bg.webp',quality=78,method=6); print('bg',bg.size,os.path.getsize(OUT+'bg.webp')//1024)
+if __name__=='__main__':
+    for who in ['dentist','director']:
+        for part,pose in zip(cols(key(D+f'/raw/{who}.png')),['down','look','away']): save(part,f'{who}_{pose}',460,620)
+    for part,pose in zip(cols(key(D+'/raw/assistant.png')),['look','glare','away']): save(part,f'assistant_{pose}',460,620)
+    for part,st in zip(cols(key(D+'/raw/hand.png')),['rest','fist','up']): save(part,f'hand_{st}',360,560)
+    for part,st in zip(cols(key(D+'/raw/feet.png')),['feet_rest','feet_curl','drill']): save(part,st,420,420)
+    bg=Image.open(D+'/raw/bg.png').convert('RGB'); bg.thumbnail((900,1350)); bg.save(OUT+'bg.webp',quality=78,method=6); print('bg',bg.size,os.path.getsize(OUT+'bg.webp')//1024)

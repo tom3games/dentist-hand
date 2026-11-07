@@ -31,3 +31,22 @@
 - snd/gari1.mp3: 75 CC0 breaking / falling / hit sfx / rubberduck / CC0
 - snd/gari2.mp3: 75 CC0 breaking / falling / hit sfx / rubberduck / CC0
 - snd/fixed.mp3: Interface Sounds / Kenney / CC0
+- snd/applause.mp3: Applause in a large hall or church / eXpl0it3r / CC0
+- snd/bell.mp3: Bell dings/chimes / PWL / CC0
+- snd/coin.mp3: Coin Drop / Vinrax / CC0
+- snd/pop1.mp3: 3 Pop Sounds / wubitog / CC0
+- snd/pop2.mp3: 3 Pop Sounds / wubitog / CC0
+- snd/squeak1.mp3: Squeak toy sounds / bart / CC0
+- snd/squeak2.mp3: Squeak toy sounds / bart / CC0
+- snd/swish1.mp3: Swishes Sound Pack / artisticdude / CC0
+- snd/swish2.mp3: Swishes Sound Pack / artisticdude / CC0
+- snd/thwack.mp3: Thwack Sounds / AntumDeluge / CC0
+- snd/door.mp3: 100 CC0 SFX / rubberduck / CC0
+- snd/jingle_sax1.mp3: 85 Short music jingles / Kenney / CC0
+- snd/jingle_sax2.mp3: 85 Short music jingles / Kenney / CC0
+- snd/jingle_sax3.mp3: 85 Short music jingles / Kenney / CC0
+- snd/onsen.mp3: Hot Springs Town / Kistol / CC0（2〜24秒を切り出し）
+- snd/funk.mp3: Funky Hip Hop Lofi Jam / omfgdude / CC0（先頭20秒）
+- snd/slurp1.mp3: 40 CC0 water / splash / slime SFX / rubberduck / CC0
+- snd/slurp2.mp3: 40 CC0 water / splash / slime SFX / rubberduck / CC0
+- snd/bubble.mp3: 40 CC0 water / splash / slime SFX / rubberduck / CC0

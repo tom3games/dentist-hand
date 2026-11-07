@@ -1,0 +1,4 @@
+Photorealistic product photograph against a perfectly flat, solid pure green (#00FF00) studio background, no shadows on the background. A sheet of exactly three objects side by side in three equal columns, each object centered in its column, nothing overlapping, generous green space between them. Soft clean studio light, sharp focus, slight top-down three-quarter angle. Absolutely no text, no letters, no numbers, no logos, no watermark.
+Left column: the bottom sole of one human foot wearing a dark navy cotton sock, sole facing the camera, with a bright red round ink smudge pressed in the middle of the sole like a seal stamp.
+Middle column: a blank white runner race bib with four safety pins in the corners, slightly curved, no number printed.
+Right column: a big foam mascot costume head shaped like a cute white molar tooth with large round eyes and a happy open mouth, realistic costume material.

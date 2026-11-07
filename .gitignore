@@ -3,3 +3,4 @@ node_modules
 shots/
 art/raw/
 art/logs/
+art/__pycache__/

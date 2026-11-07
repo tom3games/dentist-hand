@@ -1,9 +1,11 @@
 import './mute-auto.mjs'  // テスト中は絶対に音を出さない（playwright を無音に差し替え）
 import { MUTE_LAUNCH, muteContext } from './mute.mjs'
-// 台本どおりに進めて撮る。node shot.mjs [幅 高さ]
+// 台本を決めて進め、見せ場を撮る。node shot.mjs [幅 高さ]（EN=1 で英語）
 import { chromium } from 'playwright'
 import { spawn } from 'node:child_process'
+import { mkdirSync } from 'node:fs'
 const ROOT = import.meta.dirname, PORT = 5883
+mkdirSync(ROOT + '/shots', { recursive: true })
 const [W, H] = [Number(process.argv[2] || 390), Number(process.argv[3] || 844)]
 const server = spawn(process.execPath, ['server.mjs'], { cwd: ROOT, env: { ...process.env, PORT: String(PORT) } })
 await new Promise(r => setTimeout(r, 400))
@@ -15,19 +17,43 @@ p.on('pageerror', e => errs.push(e.message)); p.on('console', m => { if (m.type(
 await p.goto(`http://localhost:${PORT}/`); await p.waitForFunction(() => window.__dhReady)
 await p.waitForTimeout(500)
 const tag = `${W}x${H}${process.env.EN ? '-en' : ''}`
-await p.screenshot({ path: `shots/s-${tag}-title.png` })
-await p.click('#bHow'); await p.waitForTimeout(200); await p.screenshot({ path: `shots/s-${tag}-how.png` })
-await p.click('#bHowGo'); await p.evaluate(() => { dh.dbg.pause(true); dh.startGame({ seed: 1000, tutorial: false, boss: false }) })
-const S = await p.evaluate(() => ({ ev: dh.run.S.ev, blocks: dh.run.S.blocks }))
-const A = S.ev.find(x => x.kind === 'bad' && x.pat === 'A'), B = S.ev.find(x => x.kind === 'bad' && x.pat === 'B'), Cv = S.ev.find(x => x.kind === 'cav'), Dd = S.ev.find(x => x.kind === 'bad' && (x.pat === 'D' || x.pat === 'C'))
-const at = async (tt, name) => { await p.evaluate(tt => dh.dbg.to(tt), tt); await p.waitForTimeout(250); await p.screenshot({ path: `shots/s-${tag}-${name}.png` }) }
-const rinse = S.blocks.find(x => x.kind === 'rinse'), chat = S.blocks.find(x => x.kind === 'chat')
-const plan = [[2, 'intro'], [A.a0 + 0.7, 'badLook', true], [Cv.contact + 0.4, 'cavDrill'], [Dd.end + 0.2, 'silver'], [rinse.a + 3.6, 'rinse'], [chat.a + 2.6, 'chat']].sort((x, y) => x[0] - y[0])
-for (const [tt, name, up] of plan) {
-  await at(tt, name)
-  if (up) { await p.evaluate(() => { dh.raise(); dh.dbg.step(30) }); await p.waitForTimeout(250); await p.screenshot({ path: `shots/s-${tag}-${name}-raised.png` }) }
+const snap = async name => { await p.waitForTimeout(120); await p.screenshot({ path: `shots/s-${tag}-${name}.png` }) }
+await snap('title')
+await p.click('#bHow'); await snap('how')
+await p.click('#bHowBack')
+// 台本: 結婚式 → 院長 → 借金（足でハンコ）→ 電話 → ミラーボール → 誕生日 → ドリルが飛ぶ → 跡継ぎ → けんか → 音楽
+await p.evaluate(() => { dh.dbg.pause(true); dh.startGame({ seed: 7, tutorial: false, topics: ['wedding', 'loan', 'onsen', 'mascot'], events: ['boss', 'phone', 'ball', 'bday', 'fly', 'heir', 'fight', 'music'] }) })
+const st = n => p.evaluate(n => dh.dbg.step(n), n)
+const toReply = () => p.evaluate(() => dh.dbg.toReply())
+const reply = k => p.evaluate(k => dh.reply(k), k)
+await st(70); await snap('intro-hand')
+await toReply(); await st(20); await snap('q1')
+await reply('aga'); await st(10); await snap('psay')
+await toReply(); await st(40); await snap('q2-prop')
+await reply('oga'); await st(60); await snap('huh')
+await toReply(); await st(20); await snap('q2b-big')
+await reply('aga'); await st(50); await snap('commit-stamp')
+// 院長
+await toReply(); await snap('boss')
+await reply('nn'); await st(45); await snap('boss-after')
+await p.evaluate(() => dh.dbg.skipReply())
+// 借金
+for (let i = 0; i < 3; i++) { await toReply(); const id = await p.evaluate(() => dh.run.deck[dh.run.segI].id); if (id === 'loan' && await p.evaluate(() => !!dh.run.vis.prop)) break; await p.evaluate(() => dh.dbg.skipReply()) }
+await snap('loan-ask')
+await p.evaluate(() => dh.dbg.skipReply()); await st(200); await snap('loan-foot')
+const evShots = async (name, k) => {
+  for (let i = 0; i < 6; i++) { await toReply(); const id = await p.evaluate(() => dh.run.deck[dh.run.segI].id); if (id === name) break; await p.evaluate(() => dh.dbg.skipReply()) }
+  await snap('ev-' + name)
+  if (k) { await reply(k); await st(130); await snap('ev-' + name + '-after') } else await p.evaluate(() => dh.dbg.skipReply())
 }
-await p.evaluate(() => { dh.dbg.to(1e9) }); await p.waitForTimeout(5200)
-await p.screenshot({ path: `shots/s-${tag}-result.png` })
-console.log(tag, 'errors:', errs.length ? errs : 'none', await p.evaluate(() => dh.result))
+await evShots('phone', 'nn')
+await evShots('ball', 'aga')
+await evShots('bday', 'ea')
+await evShots('fly', 'nn')
+await evShots('heir', 'nn')
+await evShots('fight', 'nn')
+await evShots('music', 'aga')
+await p.evaluate(() => dh.dbg.finish()); await p.waitForTimeout(5200)
+await snap('result')
+console.log(tag, 'errors:', errs.length ? errs : 'none', JSON.stringify(await p.evaluate(() => ({ n: dh.result.n, A: dh.result.A, title: dh.result.title }))))
 await b.close(); server.kill()
