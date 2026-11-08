@@ -77,7 +77,7 @@ await t('OGP 一式があり og:image が 1200x630 の png（?v=3）', async () 
     const img = new Image(); img.src = 'og.png?v=3x'; await img.decode().catch(() => {})
     return { title: m('og:title'), desc: m('og:description'), image: m('og:image'), url: m('og:url'), card: m('twitter:card'), w: img.naturalWidth, h: img.naturalHeight }
   })
-  expect(r.title === '口を開けたまま、同意しました' && r.desc && /og\.png\?v=3$/.test(r.image) && r.url === 'https://tom3games.github.io/dentist-hand/' && r.card === 'summary_large_image' && r.w === 1200 && r.h === 630, r)
+  expect(r.title === '口を開けたまま、同意しました' && r.desc && /og\.png\?v=3$/.test(r.image) && r.url === 'https://tom3games.com/play/dentist-hand/' && r.card === 'summary_large_image' && r.w === 1200 && r.h === 630, r)
 })
 await t('画面に「AI」「画像生成」の文字が無い（全画面・日英）', async () => {
   const s = await p.evaluate(() => { const D = dh.D; return JSON.stringify(D) + document.body.innerText })
