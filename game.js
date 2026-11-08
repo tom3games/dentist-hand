@@ -614,7 +614,7 @@ function render() {
   if (open) { const k = clamp01((r.wait.until - t) / r.wait.dur); fuse.style.opacity = 1; fuse.style.transform = `scaleX(${k.toFixed(3)})` } else fuse.style.opacity = 0
   drawMon(r)
 }
-const rainEls = [], tearEls = [...document.querySelectorAll('#tears i')]
+const rainEls = [], tearEls = [...document.querySelectorAll('#tears i')], dropEls = [...document.querySelectorAll('#tears b')]
 for (let i = 0; i < 9; i++) { const im = document.createElement('img'); im.alt = ''; $('#rain').appendChild(im); rainEls.push(im) }
 function renderReact(rk, rt, RX, t) {
   const rainOn = rk === 'rain'
@@ -626,13 +626,21 @@ function renderReact(rk, rt, RX, t) {
     im.style.left = ((i * 37) % 90 - 4) + '%'
     im.style.transform = `translateY(${y.toFixed(0)}vh) rotate(${((i % 2 ? 1 : -1) * q * 260 + i * 40).toFixed(0)}deg) scale(${(0.7 + (i % 3) * 0.2).toFixed(2)})`
   })
-  // 涙（目の位置から落ちる。両目×2滴）
-  const eyes = [[14, 15.5], [36, 15], [15, 16], [37, 15.5]]
+  // うれし泣き: 両目（#doc の中の %）から涙の川が伸びて流れ続け、目じりからしずくが外へ飛ぶ
+  const cry = rk === 'cry', eyes = [[40.5, 28], [64.5, 27]]
   tearEls.forEach((el, i) => {
-    if (rk !== 'cry') { el.style.opacity = 0; return }
-    const ph = ((rt + i * 0.27) % 0.8) / 0.8
-    el.style.left = eyes[i][0] + '%'; el.style.top = (eyes[i][1] + ph * 14) + '%'
-    el.style.opacity = (1 - ph).toFixed(2)
+    if (!cry) { el.style.opacity = 0; return }
+    const k = clamp01(rt / 0.35)
+    el.style.left = eyes[i][0] + '%'; el.style.top = eyes[i][1] + '%'
+    el.style.height = (k * (24 + Math.sin(rt * 9 + i) * 1.2)).toFixed(1) + '%'
+    el.style.opacity = 1; el.style.backgroundPosition = `0 ${(rt * 90).toFixed(0)}px`
+  })
+  dropEls.forEach((el, i) => {
+    if (!cry) { el.style.opacity = 0; return }
+    const e = i % 2, dir = e ? 1 : -1, ph = ((rt + (i >> 1) * 0.21) % 0.6) / 0.6
+    el.style.left = (eyes[e][0] + dir * (3 + ph * 12)).toFixed(1) + '%'
+    el.style.top = (eyes[e][1] - 1 - ph * 5 + ph * ph * 16).toFixed(1) + '%'
+    el.style.opacity = rt < 0.1 ? 0 : (1 - ph * ph).toFixed(2)
   })
 }
 function renderProp(V, t) {
