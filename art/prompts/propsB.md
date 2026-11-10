@@ -1,4 +1,0 @@
-Photorealistic product photograph against a perfectly flat, solid pure green (#00FF00) studio background, no shadows on the background. A sheet of exactly three objects side by side in three equal columns, each object centered in its column, nothing overlapping, generous green space between them. Soft clean studio light, sharp focus, slight top-down three-quarter angle. Absolutely no text, no letters, no numbers, no logos, no watermark.
-Left column: a small round wooden Japanese hot spring bathhouse bucket (hinoki) with a folded white hand towel resting on its rim.
-Middle column: a classic chrome vintage stage microphone (no stand), shiny.
-Right column: a plain gold ring whose setting holds a lumpy, porous, off-white and pale yellow mineral stone like dental tartar, presented as if it were a gemstone.
