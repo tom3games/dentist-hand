@@ -24,7 +24,7 @@
 - snd/spit2.mp3: 40 CC0 water / splash / slime SFX / rubberduck / CC0
 
 ## 絵
-- img/*.webp: 画像生成（Codex）で作った写真風の人物・手・足・ドリル・天井。プロンプトは art/prompts/、緑背景の抜きは art/key.py。実在の人物・医院ではない
+- img/*.webp: このゲームのために作った写真風の人物・手・足・ドリル・天井。緑背景の抜きは art/key.py。実在の人物・医院ではない
 
 ## 音（CC BY の表示）
 - ドリルの音: "WWS Dentaldrill" Work With Sounds / La Fonderie, CC BY 4.0（https://commons.wikimedia.org/wiki/File:WWS_Dentaldrill.ogg）。8〜16秒を切り出してループにした。遊び方の画面にも表示
