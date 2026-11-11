@@ -399,7 +399,7 @@ Snd.def({
 Snd.files.__loop = ['snd/drill_loop.mp3', 'snd/suction.mp3', 'snd/amb_room.mp3', 'snd/bgm_clinic.mp3', 'snd/onsen.mp3', 'snd/funk.mp3']
 let drillSrc = null, drillGain = null
 function drillSound(rate, vol, on) {
-  if (!Snd.ctx || muted) { if (drillSrc) { try { drillSrc.stop() } catch (e) {} drillSrc = null } return }
+  if (!Snd.ctx || muted || Snd.away) { if (drillSrc) { try { drillSrc.stop() } catch (e) {} drillSrc = null } return }
   const buf = Snd.bufs['snd/drill_loop.mp3']
   if (on && !drillSrc && buf && buf !== 'loading') {
     const c = Snd.ctx; drillSrc = c.createBufferSource(); drillSrc.buffer = buf; drillSrc.loop = true; drillGain = c.createGain(); drillGain.gain.value = 0
@@ -838,7 +838,9 @@ $('#bHowGo').onclick = () => { Snd.init(); Snd.play('ok', { vol: 0.5 }); startGa
 $('#bLang').onclick = () => { lang = lang === 'ja' ? 'en' : 'ja'; try { localStorage.setItem('dh_lang', lang) } catch (e) {} applyLang() }
 $('#bSnd').onclick = () => { Snd.init(); setMute(!muted) }
 $('#bMute').onclick = e => { e.stopPropagation(); Snd.init(); setMute(!muted) }
-document.addEventListener('visibilitychange', () => { if (document.hidden) drillSound(1, 0, false); last = performance.now() })
+document.addEventListener('visibilitychange', () => { if (document.hidden || document.visibilityState === 'hidden' || Snd.away) drillSound(1, 0, false); last = performance.now() })
+// 横丁へ移る・凍結される時もドリルを止める（BGM と環境音は sfx.js が止める）
+addEventListener('pagehide', () => drillSound(1, 0, false)); document.addEventListener('freeze', () => drillSound(1, 0, false))
 
 // ---------------------------------------------------------------- 検証用の窓口
 window.dh = {
@@ -857,6 +859,7 @@ window.dh = {
     skipReply: () => { let n = 0; while (run && !run.done && replyOpen(run) && n++ < 60 * 10) step1(); render() },
     finish: () => { let n = 0; while (run && !run.done && n++ < 60 * 900) { if (paused) break; step1() } render() },
     tutStage: () => tutStage,
+    drill: (on, vol = 0.3) => { if (on != null) drillSound(1, vol, on); return !!drillSrc },   // ドリル音が鳴っているか（ページを離れた時の検証）
   },
 }
 
